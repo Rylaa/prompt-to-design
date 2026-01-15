@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__prompt-to-design__figma_connection_status",
+      "mcp__prompt-to-design__figma_list_components",
+      "mcp__prompt-to-design__figma_set_theme",
+      "mcp__prompt-to-design__figma_create_frame",
+      "mcp__prompt-to-design__figma_create_apple_component",
+      "mcp__prompt-to-design__figma_set_autolayout",
+      "mcp__prompt-to-design__figma_modify_node",
+      "mcp__prompt-to-design__figma_create_text",
+      "mcp__prompt-to-design__figma_create_card",
+      "mcp__prompt-to-design__figma_create_ellipse",
+      "mcp__prompt-to-design__figma_create_rectangle",
+      "Skill(frontend-design:frontend-design)",
+      "Skill(skill-creator)",
+      "Bash(/Users/yusufdemirkoparan/.claude/skills/skill-creator/scripts/init_skill.py:*)",
+      "Bash(/Users/yusufdemirkoparan/.claude/skills/skill-creator/scripts/quick_validate.py:*)"
+    ]
+  }
+}

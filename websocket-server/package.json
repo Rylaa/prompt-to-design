@@ -1,0 +1,20 @@
+{
+  "name": "prompt-to-design-websocket",
+  "version": "1.0.0",
+  "description": "WebSocket bridge between MCP Server and Figma Plugin",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.5.0"
+  }
+}

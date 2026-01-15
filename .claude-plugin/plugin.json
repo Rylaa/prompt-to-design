@@ -1,0 +1,9 @@
+{
+  "name": "prompt-to-design",
+  "version": "1.0.0",
+  "description": "Figma design automation with MCP tools - includes figma-design-executor agent for pixel-perfect UI implementation",
+  "author": {
+    "name": "Rylaa",
+    "url": "https://github.com/Rylaa"
+  }
+}

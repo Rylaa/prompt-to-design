@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI Design Assistant</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --bg-dark: #0f172a;
+      --bg-dark-secondary: #1e293b;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --accent-primary: #6366f1;
+      --accent-primary-hover: #4f46e5;
+      --accent-secondary: #8b5cf6;
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-bg: #fffbeb;
+      --error: #ef4444;
+      --error-bg: #fef2f2;
+      --info: #3b82f6;
+      --info-bg: #eff6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12px;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      color: white;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .header-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      font-size: 11px;
+      opacity: 0.8;
+      font-weight: 400;
+    }
+
+    .version-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 16px 20px;
+    }
+
+    /* Connection Card */
+    .connection-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .connection-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-indicator {
+      position: relative;
+      width: 12px;
+      height: 12px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--error);
+      position: relative;
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+    }
+
+    .status-dot.connecting {
+      background: var(--warning);
+    }
+
+    .status-dot::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      opacity: 0;
+    }
+
+    .status-dot.connected::after {
+      border-color: var(--success);
+      animation: ripple 2s ease-out infinite;
+    }
+
+    .status-dot.connecting::after {
+      border-color: var(--warning);
+      animation: pulse-ring 1s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 0.4; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 0.3; }
+      100% { transform: scale(1); opacity: 0.6; }
+    }
+
+    .status-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .status-text {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .status-subtext {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Connection Stats */
+    .connection-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-color);
+    }
+
+    .stat-item {
+      background: var(--bg-primary);
+      padding: 12px 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .stat-value.success { color: var(--success); }
+    .stat-value.warning { color: var(--warning); }
+    .stat-value.error { color: var(--error); }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Heartbeat Indicator */
+    .heartbeat-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .heartbeat-icon {
+      font-size: 14px;
+      color: var(--error);
+    }
+
+    .heartbeat-icon.active {
+      color: var(--success);
+      animation: heartbeat 1s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    .heartbeat-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .heartbeat-time {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+      box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-color);
+    }
+
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    /* Config Section */
+    .config-section {
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .config-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .config-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      transition: all 0.2s;
+    }
+
+    .config-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Log Section */
+    .log-section {
+      margin-bottom: 16px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .log-filters {
+      display: flex;
+      gap: 4px;
+    }
+
+    .filter-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .filter-btn.active {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    .filter-btn:hover:not(.active) {
+      background: var(--border-color);
+    }
+
+    .log-container {
+      background: var(--bg-dark);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--bg-dark-secondary);
+    }
+
+    .log-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg-dark-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .log-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .log-count {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .log {
+      height: 160px;
+      overflow-y: auto;
+      padding: 8px 0;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .log::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .log::-webkit-scrollbar-thumb {
+      background: var(--bg-dark-secondary);
+      border-radius: 3px;
+    }
+
+    .log-entry {
+      padding: 4px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: #94a3b8;
+      transition: background 0.15s;
+    }
+
+    .log-entry:hover {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .log-entry .time {
+      color: #64748b;
+      flex-shrink: 0;
+      font-size: 10px;
+    }
+
+    .log-entry .icon {
+      flex-shrink: 0;
+      width: 14px;
+      text-align: center;
+    }
+
+    .log-entry .message {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .log-entry.success { color: #34d399; }
+    .log-entry.success .icon { color: #10b981; }
+
+    .log-entry.error { color: #f87171; }
+    .log-entry.error .icon { color: #ef4444; }
+
+    .log-entry.info { color: #60a5fa; }
+    .log-entry.info .icon { color: #3b82f6; }
+
+    .log-entry.warning { color: #fbbf24; }
+    .log-entry.warning .icon { color: #f59e0b; }
+
+    /* Instructions */
+    .instructions-card {
+      background: linear-gradient(135deg, var(--info-bg) 0%, #f0f9ff 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .instructions-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .instructions-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--info);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+
+    .instructions-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e40af;
+    }
+
+    .instructions-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .instructions-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 12px;
+      color: #1e3a5f;
+      line-height: 1.5;
+    }
+
+    .step-number {
+      width: 20px;
+      height: 20px;
+      background: var(--info);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .instructions-list code {
+      background: rgba(59, 130, 246, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 11px;
+      color: #1e40af;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-info {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .footer-link {
+      font-size: 10px;
+      color: var(--accent-primary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .footer-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    /* Collapsible */
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+
+    .collapsible-icon {
+      transition: transform 0.2s;
+    }
+
+    .collapsible-header.open .collapsible-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 10px;
+      background: var(--bg-dark);
+      color: white;
+      font-size: 11px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+      margin-bottom: 6px;
+    }
+
+    .tooltip:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">✨</div>
+      <div class="header-title">
+        <h1>Prompt to Design</h1>
+        <span class="header-subtitle">AI-Powered Design Bridge</span>
+      </div>
+    </div>
+    <span class="version-badge">v1.0.0</span>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Connection Card -->
+    <div class="connection-card">
+      <div class="connection-header">
+        <div class="connection-status">
+          <div class="status-indicator">
+            <div class="status-dot" id="statusDot"></div>
+          </div>
+          <div class="status-info">
+            <span class="status-text" id="statusText">Disconnected</span>
+            <span class="status-subtext" id="statusSubtext">Click connect to start</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="connectBtn" onclick="toggleConnection()">
+          <span id="connectBtnIcon">⚡</span>
+          <span id="connectBtnText">Connect</span>
+        </button>
+      </div>
+
+      <!-- Connection Stats -->
+      <div class="connection-stats" id="connectionStats" style="display: none;">
+        <div class="stat-item">
+          <div class="stat-value" id="statUptime">00:00</div>
+          <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="statMessages">0</div>
+          <div class="stat-label">Messages</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value success" id="statLatency">--</div>
+          <div class="stat-label">Latency</div>
+        </div>
+      </div>
+
+      <!-- Heartbeat Indicator -->
+      <div class="heartbeat-container" id="heartbeatContainer" style="display: none;">
+        <span class="heartbeat-icon" id="heartbeatIcon">💓</span>
+        <span class="heartbeat-text">Keepalive Active</span>
+        <span class="heartbeat-time" id="lastHeartbeat">--:--:--</span>
+      </div>
+    </div>
+
+    <!-- Config Section -->
+    <div class="config-section">
+      <div class="section-title">
+        <span>🔗</span>
+        Server Configuration
+      </div>
+      <div class="config-input-group">
+        <input type="text" class="config-input" id="wsUrl" value="ws://localhost:9001" placeholder="ws://localhost:9001" />
+        <button class="btn btn-secondary btn-sm tooltip" data-tooltip="Test connection" onclick="testConnection()">🔍</button>
+      </div>
+    </div>
+
+    <!-- Log Section -->
+    <div class="log-section">
+      <div class="log-header">
+        <div class="section-title" style="margin-bottom: 0;">
+          <span>📋</span>
+          Activity Log
+        </div>
+        <div class="log-filters">
+          <button class="filter-btn active" data-filter="all" onclick="setLogFilter('all')">All</button>
+          <button class="filter-btn" data-filter="success" onclick="setLogFilter('success')">✓</button>
+          <button class="filter-btn" data-filter="error" onclick="setLogFilter('error')">✗</button>
+          <button class="filter-btn" data-filter="info" onclick="setLogFilter('info')">ℹ</button>
+        </div>
+      </div>
+      <div class="log-container">
+        <div class="log-toolbar">
+          <div class="log-toolbar-left">
+            <span class="log-count" id="logCount">0 entries</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="clearLog()">Clear</button>
+        </div>
+        <div class="log" id="log">
+          <div class="empty-state" id="logEmpty">
+            <div class="empty-state-icon">📭</div>
+            <div>No activity yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions Card -->
+    <div class="instructions-card">
+      <div class="instructions-header">
+        <div class="instructions-icon">💡</div>
+        <span class="instructions-title">Quick Start Guide</span>
+      </div>
+      <ul class="instructions-list">
+        <li>
+          <span class="step-number">1</span>
+          <span>Start WebSocket server: <code>npm start</code> in websocket-server folder</span>
+        </li>
+        <li>
+          <span class="step-number">2</span>
+          <span>Click <strong>Connect</strong> button above to establish connection</span>
+        </li>
+        <li>
+          <span class="step-number">3</span>
+          <span>Use Claude Code CLI with the prompt-to-design MCP</span>
+        </li>
+        <li>
+          <span class="step-number">4</span>
+          <span>Watch your designs appear in Figma automatically! ✨</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-info">Made with ❤️ for designers</span>
+    <div class="footer-links">
+      <a class="footer-link" onclick="showHelp()">Help</a>
+      <a class="footer-link" onclick="showAbout()">About</a>
+    </div>
+  </div>
+
+  <script>
+    // Connection stability configuration
+    const CONNECT_TIMEOUT = 10000;        // 10 seconds - initial connection timeout
+    const KEEPALIVE_INTERVAL = 25000;     // 25 seconds - send keepalive ping
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const MAX_RECONNECT_DELAY = 10000;    // 10 seconds max delay
+    const RECONNECT_RESET_DELAY = 60000;  // Reset reconnect attempts after 1 min connected
+
+    let ws = null;
+    let isConnected = false;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+
+    // Connection stability state
+    let connectTimeout = null;
+    let keepaliveInterval = null;
+    let reconnectResetTimeout = null;
+    let lastMessageTime = Date.now();
+
+    // Stats tracking
+    let connectionStartTime = null;
+    let messageCount = 0;
+    let lastPingTime = null;
+    let currentLatency = null;
+    let uptimeInterval = null;
+    let logEntries = [];
+    let currentFilter = 'all';
+
+    // Icon mapping for log types
+    const logIcons = {
+      success: '✓',
+      error: '✗',
+      info: 'ℹ',
+      warning: '⚠'
+    };
+
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('log');
+      const logEmpty = document.getElementById('logEmpty');
+      const time = new Date().toLocaleTimeString();
+
+      // Hide empty state
+      if (logEmpty) logEmpty.style.display = 'none';
+
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.dataset.type = type;
+      entry.innerHTML = `
+        <span class="time">${time}</span>
+        <span class="icon">${logIcons[type] || 'ℹ'}</span>
+        <span class="message">${message}</span>
+      `;
+
+      // Apply filter
+      if (currentFilter !== 'all' && currentFilter !== type) {
+        entry.style.display = 'none';
+      }
+
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+
+      // Track entries
+      logEntries.push({ time, message, type });
+      updateLogCount();
+    }
+
+    function clearLog() {
+      const logEl = document.getElementById('log');
+      logEl.innerHTML = `
+        <div class="empty-state" id="logEmpty">
+          <div class="empty-state-icon">📭</div>
+          <div>No activity yet</div>
+        </div>
+      `;
+      logEntries = [];
+      updateLogCount();
+    }
+
+    function updateLogCount() {
+      const countEl = document.getElementById('logCount');
+      const visibleCount = currentFilter === 'all'
+        ? logEntries.length
+        : logEntries.filter(e => e.type === currentFilter).length;
+      countEl.textContent = `${visibleCount} ${visibleCount === 1 ? 'entry' : 'entries'}`;
+    }
+
+    function setLogFilter(filter) {
+      currentFilter = filter;
+
+      // Update filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+
+      // Filter log entries
+      document.querySelectorAll('.log-entry').forEach(entry => {
+        if (filter === 'all' || entry.dataset.type === filter) {
+          entry.style.display = '';
+        } else {
+          entry.style.display = 'none';
+        }
+      });
+
+      updateLogCount();
+    }
+
+    function updateStatus(status) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const subtext = document.getElementById('statusSubtext');
+      const btn = document.getElementById('connectBtn');
+      const btnIcon = document.getElementById('connectBtnIcon');
+      const btnText = document.getElementById('connectBtnText');
+      const statsEl = document.getElementById('connectionStats');
+      const heartbeatEl = document.getElementById('heartbeatContainer');
+
+      dot.className = 'status-dot';
+
+      switch (status) {
+        case 'connected':
+          dot.classList.add('connected');
+          text.textContent = 'Connected';
+          subtext.textContent = 'Bridge connection active';
+          btnIcon.textContent = '🔌';
+          btnText.textContent = 'Disconnect';
+          btn.className = 'btn btn-danger';
+          statsEl.style.display = 'grid';
+          heartbeatEl.style.display = 'flex';
+          document.getElementById('heartbeatIcon').classList.add('active');
+          isConnected = true;
+          break;
+        case 'connecting':
+          dot.classList.add('connecting');
+          text.textContent = 'Connecting...';
+          subtext.textContent = 'Establishing connection';
+          btnIcon.textContent = '⏳';
+          btnText.textContent = 'Cancel';
+          btn.className = 'btn btn-secondary';
+          break;
+        case 'disconnected':
+        default:
+          text.textContent = 'Disconnected';
+          subtext.textContent = 'Click connect to start';
+          btnIcon.textContent = '⚡';
+          btnText.textContent = 'Connect';
+          btn.className = 'btn btn-primary';
+          statsEl.style.display = 'none';
+          heartbeatEl.style.display = 'none';
+          document.getElementById('heartbeatIcon').classList.remove('active');
+          isConnected = false;
+          stopUptimeCounter();
+          break;
+      }
+    }
+
+    function startUptimeCounter() {
+      connectionStartTime = Date.now();
+      messageCount = 0;
+      updateStats();
+
+      uptimeInterval = setInterval(updateStats, 1000);
+    }
+
+    function stopUptimeCounter() {
+      if (uptimeInterval) {
+        clearInterval(uptimeInterval);
+        uptimeInterval = null;
+      }
+      connectionStartTime = null;
+    }
+
+    function updateStats() {
+      if (!connectionStartTime) return;
+
+      // Update uptime
+      const elapsed = Math.floor((Date.now() - connectionStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      const hours = Math.floor(minutes / 60);
+
+      let uptimeStr;
+      if (hours > 0) {
+        uptimeStr = `${hours}:${String(minutes % 60).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      } else {
+        uptimeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }
+      document.getElementById('statUptime').textContent = uptimeStr;
+
+      // Update message count
+      document.getElementById('statMessages').textContent = messageCount;
+
+      // Update latency
+      const latencyEl = document.getElementById('statLatency');
+      if (currentLatency !== null) {
+        latencyEl.textContent = `${currentLatency}ms`;
+        latencyEl.className = 'stat-value ' + (currentLatency < 100 ? 'success' : currentLatency < 500 ? 'warning' : 'error');
+      }
+    }
+
+    function updateHeartbeat() {
+      const time = new Date().toLocaleTimeString();
+      document.getElementById('lastHeartbeat').textContent = time;
+    }
+
+    function testConnection() {
+      const url = document.getElementById('wsUrl').value;
+      log(`Testing connection to ${url}...`, 'info');
+
+      try {
+        const testWs = new WebSocket(url);
+
+        testWs.onopen = () => {
+          log('Connection test successful!', 'success');
+          testWs.close();
+        };
+
+        testWs.onerror = () => {
+          log('Connection test failed - server not reachable', 'error');
+        };
+
+        setTimeout(() => {
+          if (testWs.readyState === WebSocket.CONNECTING) {
+            testWs.close();
+            log('Connection test timeout', 'error');
+          }
+        }, 5000);
+      } catch (e) {
+        log(`Connection test error: ${e.message}`, 'error');
+      }
+    }
+
+    function showHelp() {
+      log('Help: Visit the documentation for detailed usage instructions', 'info');
+    }
+
+    function showAbout() {
+      log('Prompt to Design v1.0.0 - AI-powered Figma design automation', 'info');
+    }
+
+    function toggleConnection() {
+      if (isConnected || ws) {
+        disconnect();
+      } else {
+        connect();
+      }
+    }
+
+    function connect() {
+      const url = document.getElementById('wsUrl').value;
+      updateStatus('connecting');
+      log(`Connecting to ${url}...`, 'info');
+
+      // Clear any existing timeouts
+      if (connectTimeout) {
+        clearTimeout(connectTimeout);
+      }
+
+      try {
+        ws = new WebSocket(url);
+
+        // Set connection timeout
+        connectTimeout = setTimeout(() => {
+          if (!isConnected && ws) {
+            log('Connection timeout - server not responding', 'error');
+            ws.close();
+            ws = null;
+            updateStatus('disconnected');
+            attemptReconnect();
+          }
+        }, CONNECT_TIMEOUT);
+
+        ws.onopen = function() {
+          // Clear connection timeout
+          if (connectTimeout) {
+            clearTimeout(connectTimeout);
+            connectTimeout = null;
+          }
+
+          updateStatus('connected');
+          log('Connected to WebSocket bridge', 'success');
+          reconnectAttempts = 0;
+          lastMessageTime = Date.now();
+
+          // Start stats tracking
+          startUptimeCounter();
+
+          // Register as Figma plugin
+          ws.send(JSON.stringify({
+            type: 'REGISTER',
+            source: 'figma'
+          }));
+
+          // Start keepalive mechanism
+          startKeepalive();
+
+          // Reset reconnect attempts after stable connection
+          if (reconnectResetTimeout) {
+            clearTimeout(reconnectResetTimeout);
+          }
+          reconnectResetTimeout = setTimeout(() => {
+            reconnectAttempts = 0;
+            log('Reconnect counter reset (stable connection)', 'info');
+          }, RECONNECT_RESET_DELAY);
+        };
+
+        ws.onmessage = function(event) {
+          lastMessageTime = Date.now();
+          messageCount++;
+          try {
+            const message = JSON.parse(event.data);
+            handleMessage(message);
+          } catch (e) {
+            log(`Failed to parse message: ${e.message}`, 'error');
+          }
+        };
+
+        ws.onclose = function(event) {
+          updateStatus('disconnected');
+          log(`Disconnected from bridge (code: ${event.code})`, 'info');
+
+          stopKeepalive();
+          ws = null;
+
+          // Clear reconnect reset timeout
+          if (reconnectResetTimeout) {
+            clearTimeout(reconnectResetTimeout);
+            reconnectResetTimeout = null;
+          }
+
+          // Auto-reconnect unless user disconnected (code 1000)
+          if (event.code !== 1000) {
+            attemptReconnect();
+          }
+        };
+
+        ws.onerror = function(error) {
+          log('WebSocket connection error', 'error');
+        };
+
+      } catch (e) {
+        log(`Connection failed: ${e.message}`, 'error');
+        updateStatus('disconnected');
+        attemptReconnect();
+      }
+    }
+
+    /**
+     * Attempt to reconnect with exponential backoff
+     */
+    function attemptReconnect() {
+      if (reconnectAttempts >= maxReconnectAttempts) {
+        log('Max reconnection attempts reached. Click Connect to retry.', 'error');
+        reconnectAttempts = 0; // Reset for manual retry
+        return;
+      }
+
+      reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+      log(`Reconnecting in ${delay/1000}s (attempt ${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+
+      setTimeout(() => {
+        if (!isConnected) {
+          connect();
+        }
+      }, delay);
+    }
+
+    /**
+     * Start keepalive mechanism
+     */
+    function startKeepalive() {
+      if (keepaliveInterval) {
+        clearInterval(keepaliveInterval);
+      }
+
+      keepaliveInterval = setInterval(() => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          return;
+        }
+
+        // Track ping time for latency calculation
+        lastPingTime = Date.now();
+
+        // Send keepalive ping to server
+        try {
+          ws.send(JSON.stringify({
+            type: 'PING',
+            timestamp: lastPingTime,
+            keepalive: true
+          }));
+          updateHeartbeat();
+        } catch (e) {
+          log(`Failed to send keepalive: ${e.message}`, 'error');
+        }
+      }, KEEPALIVE_INTERVAL);
+    }
+
+    /**
+     * Stop keepalive mechanism
+     */
+    function stopKeepalive() {
+      if (keepaliveInterval) {
+        clearInterval(keepaliveInterval);
+        keepaliveInterval = null;
+      }
+    }
+
+    function disconnect() {
+      reconnectAttempts = maxReconnectAttempts; // Prevent auto-reconnect
+
+      // Clear all timers
+      stopKeepalive();
+      if (connectTimeout) {
+        clearTimeout(connectTimeout);
+        connectTimeout = null;
+      }
+      if (reconnectResetTimeout) {
+        clearTimeout(reconnectResetTimeout);
+        reconnectResetTimeout = null;
+      }
+
+      if (ws) {
+        ws.close(1000, 'User disconnect'); // Normal closure code
+        ws = null;
+      }
+
+      updateStatus('disconnected');
+      log('Disconnected by user', 'info');
+
+      // Reset for future connections
+      reconnectAttempts = 0;
+    }
+
+    function handleMessage(message) {
+      switch (message.type) {
+        case 'WELCOME':
+          log(message.message, 'info');
+          break;
+
+        case 'REGISTERED':
+          log(`Registered as ${message.as}`, 'success');
+          break;
+
+        case 'COMMAND':
+          log(`Command received: ${message.action}`, 'info');
+          // Forward command to plugin code
+          parent.postMessage({
+            pluginMessage: {
+              type: 'COMMAND',
+              data: message
+            }
+          }, '*');
+          break;
+
+        case 'PING':
+          // Update last message time
+          lastMessageTime = Date.now();
+          updateHeartbeat();
+
+          if (message.keepalive) {
+            // Server keepalive ping - respond directly
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              // Calculate latency if we sent a ping
+              if (lastPingTime) {
+                currentLatency = Date.now() - lastPingTime;
+              }
+
+              ws.send(JSON.stringify({
+                type: 'PONG',
+                timestamp: Date.now(),
+                keepalive: true
+              }));
+            }
+          } else {
+            // Health check ping from MCP - forward to plugin
+            log(`Health check received`, 'info');
+            parent.postMessage({
+              pluginMessage: {
+                type: 'PING',
+                id: message.id
+              }
+            }, '*');
+          }
+          break;
+
+        case 'PONG':
+          // Response to our keepalive ping
+          lastMessageTime = Date.now();
+          updateHeartbeat();
+
+          // Calculate latency (handle both string and number timestamps)
+          if (message.timestamp) {
+            const ts = typeof message.timestamp === 'string'
+              ? new Date(message.timestamp).getTime()
+              : message.timestamp;
+            const latency = Date.now() - ts;
+            currentLatency = isNaN(latency) || latency < 0 ? null : latency;
+          } else if (lastPingTime) {
+            const latency = Date.now() - lastPingTime;
+            currentLatency = isNaN(latency) || latency < 0 ? null : latency;
+          }
+          break;
+
+        default:
+          log(`Unknown message type: ${message.type}`, 'info');
+      }
+    }
+
+    // Listen for responses from plugin code
+    window.onmessage = function(event) {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      messageCount++;
+
+      if (msg.type === 'RESPONSE') {
+        const statusText = msg.success ? 'Success' : 'Failed';
+        const detail = msg.nodeId ? `Node: ${msg.nodeId}` : (msg.error || '');
+        log(`Response: ${statusText} ${detail}`, msg.success ? 'success' : 'error');
+
+        // Send response back through WebSocket
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(msg));
+        }
+      } else if (msg.type === 'PONG') {
+        log('Health check response sent', 'success');
+        updateHeartbeat();
+
+        // Send PONG back through WebSocket
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(msg));
+        }
+      }
+    };
+
+    // Auto-connect on load
+    setTimeout(connect, 500);
+  </script>
+</body>
+</html>
