@@ -1,12 +1,21 @@
 {
   "name": "prompt-to-design",
   "description": "Figma design automation plugins for Claude Code",
+  "owner": {
+    "name": "Rylaa",
+    "url": "https://github.com/Rylaa"
+  },
   "plugins": [
     {
       "name": "prompt-to-design",
+      "description": "Figma design automation with MCP tools - includes figma-design-executor agent for pixel-perfect UI implementation",
       "version": "1.0.0",
-      "description": "Figma design automation with MCP tools - includes figma-design-executor agent",
-      "path": "."
+      "author": {
+        "name": "Rylaa",
+        "url": "https://github.com/Rylaa"
+      },
+      "source": "./plugins/prompt-to-design",
+      "category": "design"
     }
   ]
 }
