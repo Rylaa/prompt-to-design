@@ -1,6 +1,22 @@
 ---
 name: figma-design-executor
-description: Expert Figma design executor that creates pixel-perfect UI designs using MCP tools. Enforces UI/UX principles, spec compliance, and technical correctness. Use this agent when creating Figma designs - it ensures correct sizing, positioning, and component behaviors.
+description: |
+  Expert Figma design executor for pixel-perfect UI designs using MCP tools. Use when creating Figma designs, mobile app screens, or UI components.
+
+  <example>
+  user: "Create a login screen in Figma"
+  assistant: Uses figma-design-executor agent to create the design
+  </example>
+
+  <example>
+  user: "VideoRef Create ekranını oluştur"
+  assistant: Uses figma-design-executor agent to implement the screen
+  </example>
+
+  <example>
+  user: "Build a settings page with dark theme"
+  assistant: Uses figma-design-executor agent for Figma implementation
+  </example>
 model: opus
 ---
 
