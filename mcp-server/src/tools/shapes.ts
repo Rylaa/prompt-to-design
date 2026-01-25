@@ -32,20 +32,26 @@ export function registerShapeTools(server: McpServer): void {
 
 Frames are the primary container for layouts. Supports auto-layout, fills, strokes, effects.
 
+**IMPORTANT - Default Fill Behavior:**
+- Root frames (no parentId) get dark background (#09090B) by default if fill is not specified
+- Child frames (with parentId) remain transparent by default
+- Response includes applied fill color so you can verify what was created
+
 Args:
   - name: Frame name (default: "Frame")
   - width/height: Dimensions in pixels
-  - fill: Solid color or gradient
+  - fill: Solid color or gradient (root frames default to #09090B if omitted)
   - cornerRadius: Border radius
   - autoLayout: Enable auto-layout with direction, spacing, padding
   - effects: Shadows, blurs
 
-Returns: Node ID of created frame.
+Returns: { nodeId, fill (hex color applied), name }
 
 Examples:
-  - Simple frame: { width: 400, height: 300 }
+  - Simple frame: { width: 400, height: 300 } -> gets #09090B fill automatically
   - With auto-layout: { autoLayout: { mode: "VERTICAL", spacing: 16, padding: 24 } }
-  - With gradient: { fill: { type: "GRADIENT", gradient: { type: "LINEAR", stops: [...] } } }`,
+  - With gradient: { fill: { type: "GRADIENT", gradient: { type: "LINEAR", stops: [...] } } }
+  - Light background: { fill: { type: "SOLID", color: "#FFFFFF" } }`,
       inputSchema: CreateFrameInputSchema,
       annotations: DEFAULT_ANNOTATIONS,
     },

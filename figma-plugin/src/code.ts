@@ -315,6 +315,10 @@ function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>
 
   if (params.fill) {
     frame.fills = [createFill(params.fill as FillConfig)];
+  } else if (!params.parentId) {
+    // Root frame (parentId olmayan) icin varsayilan dark theme background
+    // #09090B = rgb(9, 9, 11) - beyaz text gorunsun diye
+    frame.fills = [{ type: "SOLID", color: { r: 9 / 255, g: 9 / 255, b: 11 / 255 } }];
   }
 
   if (params.cornerRadius !== undefined) {
@@ -440,7 +444,18 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
     figma.viewport.scrollAndZoomIntoView([frame]);
   }
 
-  return { nodeId: frame.id };
+  // Response'a fill bilgisi ekle - Claude ne renk olustugunu gorsun
+  const fills = frame.fills as readonly Paint[];
+  let fillInfo: string | null = null;
+  if (fills.length > 0 && fills[0].type === "SOLID") {
+    const solid = fills[0] as SolidPaint;
+    const r = Math.round(solid.color.r * 255);
+    const g = Math.round(solid.color.g * 255);
+    const b = Math.round(solid.color.b * 255);
+    fillInfo = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`.toUpperCase();
+  }
+
+  return { nodeId: frame.id, fill: fillInfo, name: frame.name };
 }
 
 async function handleCreateRectangle(params: Record<string, unknown>): Promise<{ nodeId: string }> {
