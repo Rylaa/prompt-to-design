@@ -17,5 +17,22 @@
     {
       "path": "commands/prompt-to-design.md"
     }
+  ],
+  "skills": [
+    {
+      "path": "skills/screen-patterns.md"
+    },
+    {
+      "path": "skills/form-patterns.md"
+    },
+    {
+      "path": "skills/navigation-patterns.md"
+    },
+    {
+      "path": "skills/list-patterns.md"
+    },
+    {
+      "path": "skills/states-feedback.md"
+    }
   ]
 }
