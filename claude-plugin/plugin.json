@@ -1,0 +1,13 @@
+{
+  "name": "prompt-to-design",
+  "version": "1.0.0",
+  "description": "AI-powered Figma design automation",
+  "agents": [
+    {
+      "path": "agents/design-agent.md"
+    },
+    {
+      "path": "agents/execution-agent.md"
+    }
+  ]
+}
