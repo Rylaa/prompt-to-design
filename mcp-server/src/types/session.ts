@@ -34,8 +34,10 @@ export interface ConnectSessionMessage {
 
 export interface SessionConnectedMessage {
   type: "SESSION_CONNECTED";
-  sessionId: string;
-  sessionName: string;
+  success: boolean;
+  sessionId?: string;
+  sessionName?: string;
+  error?: string;
 }
 
 export interface SessionDisconnectedMessage {

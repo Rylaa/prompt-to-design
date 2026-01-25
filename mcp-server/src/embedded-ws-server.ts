@@ -6,9 +6,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type {
   SessionInfo,
-  ListSessionsMessage,
   SessionsListMessage,
-  ConnectSessionMessage,
   SessionConnectedMessage
 } from "./types/session.js";
 import { getSessionRegistry } from "./session-registry.js";
@@ -16,7 +14,6 @@ import { getSessionRegistry } from "./session-registry.js";
 // Configuration
 const DEFAULT_PORT = 9001;
 const HEARTBEAT_INTERVAL = 15000;  // 15 seconds
-const CLIENT_TIMEOUT = 45000;      // 45 seconds
 const COMMAND_TIMEOUT = 30000;     // 30 seconds for command responses
 
 export interface FigmaCommand {
@@ -254,10 +251,19 @@ class EmbeddedWSServer {
       }
 
       case "CONNECT_SESSION": {
-        const connectMsg = message as unknown as ConnectSessionMessage;
-        const targetSessionId = connectMsg.sessionId;
+        const targetSessionId = message.sessionId;
 
-        // Bu session'a mı bağlanmak istiyor?
+        // Validate sessionId exists and is a string
+        if (!targetSessionId || typeof targetSessionId !== "string") {
+          ws.send(JSON.stringify({
+            type: "SESSION_CONNECTED",
+            success: false,
+            error: "Missing or invalid sessionId",
+          } as SessionConnectedMessage));
+          break;
+        }
+
+        // Check if this is the target session
         if (targetSessionId !== this.currentSessionId) {
           ws.send(JSON.stringify({
             type: "SESSION_CONNECTED",
