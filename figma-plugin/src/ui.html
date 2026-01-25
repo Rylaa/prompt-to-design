@@ -733,6 +733,13 @@
       background: var(--bg-hover);
       border-color: var(--primary-color);
     }
+
+    .no-sessions {
+      text-align: center;
+      padding: 16px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -909,6 +916,13 @@
     let logEntries = [];
     let currentFilter = 'all';
 
+    // Session management
+    let availableSessions = [];
+    let selectedSessionId = null;
+    let connectedSessionId = null;
+    let connectedSessionName = null;
+    let pendingSessionConnect = null;
+
     // Icon mapping for log types
     const logIcons = {
       success: '✓',
@@ -985,6 +999,83 @@
       });
 
       updateLogCount();
+    }
+
+    // Session management functions
+    function renderSessionList() {
+      const sessionList = document.getElementById('session-list');
+      const sessionSection = document.getElementById('session-section');
+
+      if (availableSessions.length === 0) {
+        sessionList.innerHTML = '<div class="no-sessions">No active sessions found</div>';
+        return;
+      }
+
+      sessionSection.style.display = 'block';
+
+      sessionList.innerHTML = availableSessions.map(session => {
+        const isConnected = session.sessionId === connectedSessionId;
+        const isSelected = session.sessionId === selectedSessionId;
+
+        return `
+          <div class="session-item ${isConnected ? 'connected' : ''} ${isSelected ? 'selected' : ''}"
+               onclick="selectSession('${session.sessionId}')">
+            <div class="session-info">
+              <div class="session-name">${escapeHtml(session.name)}</div>
+              <div class="session-id">${session.sessionId}</div>
+            </div>
+            <div class="session-status ${isConnected ? 'connected' : ''}">
+              ${isConnected ? 'Connected' : 'Available'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function selectSession(sessionId) {
+      selectedSessionId = sessionId;
+      renderSessionList();
+      connectToSession(sessionId);
+    }
+
+    function connectToSession(sessionId) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        // Store pending connection, then connect
+        pendingSessionConnect = sessionId;
+        connect();
+        return;
+      }
+
+      updateStatusWithMessage('connecting', `Connecting to session ${sessionId}...`);
+
+      ws.send(JSON.stringify({
+        type: 'CONNECT_SESSION',
+        sessionId: sessionId,
+        source: 'figma'
+      }));
+    }
+
+    function refreshSessions() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connect();
+        return;
+      }
+
+      ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+    }
+
+    function updateStatusWithMessage(status, message) {
+      const subtext = document.getElementById('statusSubtext');
+      updateStatus(status);
+      if (message) {
+        subtext.textContent = message;
+      }
     }
 
     function updateStatus(status) {
@@ -1173,6 +1264,13 @@
             source: 'figma'
           }));
 
+          // Request session list (for selector)
+          setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+            }
+          }, 100);
+
           // Start keepalive mechanism
           startKeepalive();
 
@@ -1322,6 +1420,16 @@
 
         case 'REGISTERED':
           log(`Registered as ${message.as}`, 'success');
+          // Backward compatibility - save session info if present
+          if (message.sessionId) {
+            connectedSessionId = message.sessionId;
+            connectedSessionName = message.sessionName || 'Unknown';
+            updateStatusWithMessage('connected', `Connected to: ${connectedSessionName}`);
+          }
+          // Request session list
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+          }
           break;
 
         case 'COMMAND':
@@ -1382,6 +1490,36 @@
             const latency = Date.now() - lastPingTime;
             currentLatency = isNaN(latency) || latency < 0 ? null : latency;
           }
+          break;
+
+        case 'SESSIONS_LIST':
+          availableSessions = message.sessions || [];
+          renderSessionList();
+
+          // If there's a pending connection, connect now
+          if (pendingSessionConnect) {
+            const sessionId = pendingSessionConnect;
+            pendingSessionConnect = null;
+            connectToSession(sessionId);
+          }
+          break;
+
+        case 'SESSION_CONNECTED':
+          if (message.success) {
+            connectedSessionId = message.sessionId;
+            connectedSessionName = message.sessionName;
+            updateStatusWithMessage('connected', `Connected to: ${message.sessionName}`);
+            renderSessionList();
+          } else {
+            updateStatusWithMessage('error', message.error || 'Failed to connect to session');
+          }
+          break;
+
+        case 'SESSION_DISCONNECTED':
+          connectedSessionId = null;
+          connectedSessionName = null;
+          updateStatusWithMessage('disconnected', message.reason || 'Disconnected from session');
+          renderSessionList();
           break;
 
         default:
