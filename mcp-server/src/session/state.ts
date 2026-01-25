@@ -26,7 +26,13 @@ class SessionManager {
     } else if (input.customDevice) {
       device = { name: "Custom", type: "mobile", ...input.customDevice };
     }
-    const theme = { ...DEFAULT_THEME, ...input.theme };
+    // Deep clone theme to avoid shared references
+    const theme = {
+      ...DEFAULT_THEME,
+      ...input.theme,
+      spacing: { ...DEFAULT_THEME.spacing, ...input.theme?.spacing },
+      radius: { ...DEFAULT_THEME.radius, ...input.theme?.radius },
+    };
     const session: DesignSession = {
       sessionId,
       projectName: input.projectName,
@@ -59,18 +65,36 @@ class SessionManager {
     if (input.device && DEVICE_PRESETS[input.device]) {
       session.device = DEVICE_PRESETS[input.device];
     }
-    if (input.theme) session.theme = { ...session.theme, ...input.theme };
+    if (input.theme) {
+      // Deep merge theme to preserve nested objects
+      session.theme = {
+        ...session.theme,
+        ...input.theme,
+        spacing: { ...session.theme.spacing, ...input.theme.spacing },
+        radius: { ...session.theme.radius, ...input.theme.radius },
+      };
+    }
     if (input.activeScreen) session.activeScreen = input.activeScreen;
     session.updatedAt = new Date().toISOString();
     return session;
   }
 
-  addScreen(screen: Omit<Screen, "components">): Screen {
+  addScreen(screen: Omit<Screen, "components">, setActive: boolean = true): Screen {
     const session = this.getActiveSession();
     if (!session) throw new Error("No active session");
+
+    // Validate screen name uniqueness
+    if (session.screens.some(s => s.name === screen.name)) {
+      throw new Error(`Screen with name "${screen.name}" already exists`);
+    }
+
     const newScreen: Screen = { ...screen, components: [] };
     session.screens.push(newScreen);
-    session.activeScreen = screen.name;
+
+    if (setActive) {
+      session.activeScreen = screen.name;
+    }
+
     session.updatedAt = new Date().toISOString();
     return newScreen;
   }
@@ -78,13 +102,24 @@ class SessionManager {
   registerComponent(component: RegisteredComponent): void {
     const session = this.getActiveSession();
     if (!session) throw new Error("No active session");
+
+    // Validate component name
+    if (!component.name || component.name.trim() === "") {
+      throw new Error("Component name is required");
+    }
+
     session.components[component.name] = component;
+
     if (session.activeScreen) {
       const screen = session.screens.find(s => s.name === session.activeScreen);
-      if (screen && !screen.components.includes(component.name)) {
+      if (!screen) {
+        throw new Error(`Active screen "${session.activeScreen}" not found`);
+      }
+      if (!screen.components.includes(component.name)) {
         screen.components.push(component.name);
       }
     }
+
     session.updatedAt = new Date().toISOString();
   }
 
@@ -96,8 +131,15 @@ class SessionManager {
   }
 
   deleteSession(sessionId: string): boolean {
-    if (this.activeSessionId === sessionId) this.activeSessionId = null;
-    return this.sessions.delete(sessionId);
+    const deleted = this.sessions.delete(sessionId);
+
+    if (this.activeSessionId === sessionId) {
+      // Auto-switch to first available session
+      const remaining = this.sessions.keys().next();
+      this.activeSessionId = remaining.done ? null : remaining.value;
+    }
+
+    return deleted;
   }
 
   listSessions(): DesignSession[] {
@@ -110,6 +152,12 @@ class SessionManager {
       return true;
     }
     return false;
+  }
+
+  // Reset all state - useful for testing
+  reset(): void {
+    this.sessions.clear();
+    this.activeSessionId = null;
   }
 }
 
