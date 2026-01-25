@@ -8,16 +8,19 @@
       --bg-primary: #ffffff;
       --bg-secondary: #f8fafc;
       --bg-tertiary: #f1f5f9;
+      --bg-hover: #f1f5f9;
       --bg-dark: #0f172a;
       --bg-dark-secondary: #1e293b;
       --text-primary: #0f172a;
       --text-secondary: #475569;
       --text-muted: #94a3b8;
       --border-color: #e2e8f0;
+      --primary-color: #6366f1;
       --accent-primary: #6366f1;
       --accent-primary-hover: #4f46e5;
       --accent-secondary: #8b5cf6;
       --success: #10b981;
+      --success-color: #10b981;
       --success-bg: #ecfdf5;
       --warning: #f59e0b;
       --warning-bg: #fffbeb;
@@ -640,6 +643,96 @@
       opacity: 1;
       visibility: visible;
     }
+
+    /* Session Section */
+    .session-section {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+    }
+
+    .session-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .session-item:hover {
+      border-color: var(--primary-color);
+      background: var(--bg-hover);
+    }
+
+    .session-item.selected {
+      border-color: var(--primary-color);
+      background: rgba(0, 122, 255, 0.1);
+    }
+
+    .session-item.connected {
+      border-color: var(--success-color);
+      background: rgba(52, 199, 89, 0.1);
+    }
+
+    .session-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .session-name {
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .session-id {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .session-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+    }
+
+    .session-status.connected {
+      background: var(--success-color);
+      color: white;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .secondary-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--primary-color);
+    }
   </style>
 </head>
 <body>
@@ -657,6 +750,17 @@
 
   <!-- Main Content -->
   <div class="main-content">
+    <!-- Session Selector -->
+    <div id="session-section" class="session-section" style="display: none;">
+      <div class="section-title">Select Session</div>
+      <div id="session-list" class="session-list">
+        <!-- Session'lar dinamik olarak eklenecek -->
+      </div>
+      <button id="refresh-sessions" class="secondary-btn" onclick="refreshSessions()">
+        Refresh Sessions
+      </button>
+    </div>
+
     <!-- Connection Card -->
     <div class="connection-card">
       <div class="connection-header">
