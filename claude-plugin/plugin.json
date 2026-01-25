@@ -13,6 +13,9 @@
   "commands": [
     {
       "path": "commands/plan.md"
+    },
+    {
+      "path": "commands/prompt-to-design.md"
     }
   ]
 }
