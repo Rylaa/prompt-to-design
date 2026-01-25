@@ -31,6 +31,7 @@ import { registerViewportTools } from "./viewport.js";
 import { registerPageTools } from "./pages.js";
 import { registerThemeTools } from "./theme.js";
 import { registerConnectionTools } from "./connection.js";
+import { registerSessionTools } from "./session.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -86,4 +87,7 @@ export function registerAllTools(server: McpServer): void {
   // Configuration
   registerThemeTools(server);
   registerConnectionTools(server);
+
+  // Session Management
+  registerSessionTools(server);
 }
