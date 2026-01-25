@@ -4,6 +4,7 @@
  * Claude Code CLI ile Figma'da tasarım oluşturma
  */
 
+import path from "path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { startServer, stopServer, getServer } from "./embedded-ws-server.js";
@@ -21,7 +22,7 @@ registerAllTools(server);
 
 // Session adını belirle (CWD'nin son kısmı veya default)
 const cwd = process.cwd();
-const sessionName = cwd.split("/").pop() || "Claude Session";
+const sessionName = path.basename(cwd) || "Claude Session";
 const port = parseInt(process.env.WEBSOCKET_PORT || "9001");
 
 // Session'ı registry'e kaydet
@@ -35,14 +36,15 @@ async function main(): Promise<void> {
   // Start embedded WebSocket server for Figma plugin communication
   try {
     await startServer();
-    console.error("Embedded WebSocket server started on port 9001");
+    console.error(`Embedded WebSocket server started on port ${port}`);
 
     // WebSocket server'a session bilgisini aktar
     const wsServer = getServer();
     wsServer.setSessionInfo(session.sessionId, sessionName);
   } catch (error) {
     console.error("Could not start embedded WebSocket server:", error);
-    console.error("Port 9001 might be in use. Try: lsof -ti:9001 | xargs kill -9");
+    console.error(`Port ${port} might be in use. Try: lsof -ti:${port} | xargs kill -9`);
+    registry.unregisterSession(session.sessionId);
   }
 
   // Connect MCP server via stdio
@@ -54,16 +56,35 @@ async function main(): Promise<void> {
 // Graceful shutdown handlers
 process.on("SIGINT", async () => {
   console.error("\n🛑 Shutting down...");
-  registry.unregisterSession(session.sessionId);
-  await stopServer();
+  try {
+    registry.unregisterSession(session.sessionId);
+    await stopServer();
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+  }
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
   console.error("\n🛑 Terminating...");
-  registry.unregisterSession(session.sessionId);
-  await stopServer();
+  try {
+    registry.unregisterSession(session.sessionId);
+    await stopServer();
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+  }
   process.exit(0);
+});
+
+process.on("uncaughtException", async (error) => {
+  console.error("Uncaught exception:", error);
+  try {
+    registry.unregisterSession(session.sessionId);
+    await stopServer();
+  } catch (cleanupError) {
+    console.error("Error during cleanup:", cleanupError);
+  }
+  process.exit(1);
 });
 
 // Start the server
