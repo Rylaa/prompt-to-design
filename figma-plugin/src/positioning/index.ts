@@ -10,4 +10,5 @@ export {
   calculatePosition,
   getLayoutContextFromNode,
   REGION_HEIGHTS,
+  DEFAULT_SPACING,
 } from "./calculator";

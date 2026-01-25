@@ -21,6 +21,9 @@ const REGION_HEIGHTS = {
   homeIndicator: 34,
 };
 
+// Varsayilan element arasi bosluk
+const DEFAULT_SPACING = 16;
+
 /**
  * Frame icindeki region sinirlarini hesaplar
  */
@@ -56,8 +59,11 @@ export function findNextAvailableY(
   siblings: SiblingInfo[],
   startY: number,
   endY: number,
-  spacing: number = 16
+  spacing: number = DEFAULT_SPACING
 ): number {
+  // endY negatif veya startY'den kucukse startY dondur
+  const safeEndY = Math.max(endY, startY);
+
   if (siblings.length === 0) return startY;
 
   // Siblings'i y pozisyonuna gore sirala
@@ -67,7 +73,7 @@ export function findNextAvailableY(
   const lastSibling = sorted[sorted.length - 1];
   const nextY = lastSibling.y + lastSibling.height + spacing;
 
-  return Math.min(nextY, endY);
+  return Math.min(nextY, safeEndY);
 }
 
 /**
@@ -125,12 +131,9 @@ export function calculatePosition(
     };
   }
 
-  // Region sinirlarini hesapla
-  const bounds = calculateRegionBounds(
-    parentHeight,
-    region !== "header", // header region'inda header yok
-    region !== "footer"  // footer region'inda footer yok
-  );
+  // Region sinirlarini hesapla - tum region'lari dahil et
+  // Her zaman tam layout hesapla, hedef region ne olursa olsun
+  const bounds = calculateRegionBounds(parentHeight);
 
   // Region'a gore Y pozisyonu
   const regionBound = bounds[region];
@@ -220,4 +223,4 @@ export function getLayoutContextFromNode(parent: {
   };
 }
 
-export { REGION_HEIGHTS };
+export { REGION_HEIGHTS, DEFAULT_SPACING };
