@@ -62,9 +62,11 @@ Returns: Connection status and instructions if not connected.`,
             connected: pingResult.success,
             serverRunning: status.serverRunning,
             figmaConnected: status.figmaConnected,
+            sessionId: status.sessionId,
+            sessionName: status.sessionName,
             lastPong: status.figmaLastPong?.toISOString(),
             message: pingResult.success
-              ? "Connected to Figma plugin and responding"
+              ? `Connected to Figma plugin (Session: ${status.sessionName})`
               : "Connected but plugin not responding to ping",
           }, null, 2),
         }],
