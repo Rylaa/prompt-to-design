@@ -1006,6 +1006,12 @@
       const sessionList = document.getElementById('session-list');
       const sessionSection = document.getElementById('session-section');
 
+      // Null guard for DOM elements
+      if (!sessionList || !sessionSection) {
+        console.error('Session list DOM elements not found');
+        return;
+      }
+
       if (availableSessions.length === 0) {
         sessionList.innerHTML = '<div class="no-sessions">No active sessions found</div>';
         return;
@@ -1013,16 +1019,28 @@
 
       sessionSection.style.display = 'block';
 
-      sessionList.innerHTML = availableSessions.map(session => {
+      // Filter valid sessions (must have sessionId and name properties)
+      const validSessions = availableSessions.filter(session =>
+        session && typeof session.sessionId === 'string' && typeof session.name === 'string'
+      );
+
+      if (validSessions.length === 0) {
+        sessionList.innerHTML = '<div class="no-sessions">No valid sessions found</div>';
+        return;
+      }
+
+      sessionList.innerHTML = validSessions.map(session => {
         const isConnected = session.sessionId === connectedSessionId;
         const isSelected = session.sessionId === selectedSessionId;
+        // Escape sessionId for safe use in data attribute
+        const escapedSessionId = escapeHtml(session.sessionId);
 
         return `
           <div class="session-item ${isConnected ? 'connected' : ''} ${isSelected ? 'selected' : ''}"
-               onclick="selectSession('${session.sessionId}')">
+               data-session-id="${escapedSessionId}">
             <div class="session-info">
               <div class="session-name">${escapeHtml(session.name)}</div>
-              <div class="session-id">${session.sessionId}</div>
+              <div class="session-id">${escapedSessionId}</div>
             </div>
             <div class="session-status ${isConnected ? 'connected' : ''}">
               ${isConnected ? 'Connected' : 'Available'}
@@ -1030,6 +1048,16 @@
           </div>
         `;
       }).join('');
+
+      // Add click handlers via event delegation (prevents XSS from inline onclick)
+      sessionList.querySelectorAll('.session-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const sessionId = this.dataset.sessionId;
+          if (sessionId) {
+            selectSession(sessionId);
+          }
+        });
+      });
     }
 
     function escapeHtml(text) {
@@ -1054,11 +1082,16 @@
 
       updateStatusWithMessage('connecting', `Connecting to session ${sessionId}...`);
 
-      ws.send(JSON.stringify({
-        type: 'CONNECT_SESSION',
-        sessionId: sessionId,
-        source: 'figma'
-      }));
+      try {
+        ws.send(JSON.stringify({
+          type: 'CONNECT_SESSION',
+          sessionId: sessionId,
+          source: 'figma'
+        }));
+      } catch (e) {
+        log(`Failed to send session connect: ${e.message}`, 'error');
+        updateStatusWithMessage('disconnected', 'Failed to connect to session');
+      }
     }
 
     function refreshSessions() {
@@ -1067,7 +1100,11 @@
         return;
       }
 
-      ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+      try {
+        ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+      } catch (e) {
+        log(`Failed to refresh sessions: ${e.message}`, 'error');
+      }
     }
 
     function updateStatusWithMessage(status, message) {
@@ -1259,17 +1296,16 @@
           startUptimeCounter();
 
           // Register as Figma plugin
-          ws.send(JSON.stringify({
-            type: 'REGISTER',
-            source: 'figma'
-          }));
+          try {
+            ws.send(JSON.stringify({
+              type: 'REGISTER',
+              source: 'figma'
+            }));
+          } catch (e) {
+            log(`Failed to send registration: ${e.message}`, 'error');
+          }
 
-          // Request session list (for selector)
-          setTimeout(() => {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
-            }
-          }, 100);
+          // Note: LIST_SESSIONS is requested in REGISTERED handler, no need to duplicate here
 
           // Start keepalive mechanism
           startKeepalive();
@@ -1428,7 +1464,11 @@
           }
           // Request session list
           if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+            try {
+              ws.send(JSON.stringify({ type: 'LIST_SESSIONS' }));
+            } catch (e) {
+              log(`Failed to request sessions: ${e.message}`, 'error');
+            }
           }
           break;
 
@@ -1456,11 +1496,15 @@
                 currentLatency = Date.now() - lastPingTime;
               }
 
-              ws.send(JSON.stringify({
-                type: 'PONG',
-                timestamp: Date.now(),
-                keepalive: true
-              }));
+              try {
+                ws.send(JSON.stringify({
+                  type: 'PONG',
+                  timestamp: Date.now(),
+                  keepalive: true
+                }));
+              } catch (e) {
+                log(`Failed to send PONG: ${e.message}`, 'error');
+              }
             }
           } else {
             // Health check ping from MCP - forward to plugin
@@ -1541,7 +1585,11 @@
 
         // Send response back through WebSocket
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(msg));
+          try {
+            ws.send(JSON.stringify(msg));
+          } catch (e) {
+            log(`Failed to send response: ${e.message}`, 'error');
+          }
         }
       } else if (msg.type === 'PONG') {
         log('Health check response sent', 'success');
@@ -1549,7 +1597,11 @@
 
         // Send PONG back through WebSocket
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(msg));
+          try {
+            ws.send(JSON.stringify(msg));
+          } catch (e) {
+            log(`Failed to send PONG response: ${e.message}`, 'error');
+          }
         }
       }
     };
