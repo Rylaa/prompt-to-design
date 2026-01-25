@@ -417,13 +417,19 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
   }
 
   // Smart positioning uygula (region varsa)
-  if (parentNode && params.region) {
+  const validRegions = ["header", "content", "footer"] as const;
+  type ValidRegion = typeof validRegions[number];
+  const region: ValidRegion | undefined = validRegions.includes(params.region as ValidRegion)
+    ? (params.region as ValidRegion)
+    : undefined;
+
+  if (parentNode && region) {
     applySmartPosition(frame, parentNode, {
       x: params.x as number | undefined,
       y: params.y as number | undefined,
       width: (params.width as number) || 400,
       height: (params.height as number) || 300,
-      region: params.region as "header" | "content" | "footer",
+      region,
       alignment: (params.alignment as "start" | "center" | "end" | "stretch") || "stretch",
     });
   }
