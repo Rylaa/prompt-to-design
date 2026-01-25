@@ -1,5 +1,6 @@
 ---
 name: execution-agent
+color: "#FF3B30"
 description: |
   Design Agent'in planlarini Figma'da uygular. Frame olusturur,
   componentleri yerlestirir, smart positioning uygular.
@@ -27,6 +28,7 @@ tools:
   - mcp__prompt-to-design__figma_create_icon
   - mcp__prompt-to-design__figma_set_autolayout
   - mcp__prompt-to-design__figma_set_fill
+  - mcp__prompt-to-design__figma_set_layout_sizing
   - mcp__prompt-to-design__figma_connection_status
 ---
 
@@ -72,33 +74,54 @@ Layout'a gore region frame'lerini olustur:
 
 **Header Region:**
 ```typescript
-figma_create_frame({
+// 1. Frame olustur
+const header = figma_create_frame({
   name: "Header",
   parentId: mainFrameId,
   width: device.width,
   height: 60,
   autoLayout: { mode: "HORIZONTAL", padding: 16 }
 })
+
+// 2. KRITIK: FILL sizing uygula
+figma_set_layout_sizing({
+  nodeId: header.nodeId,
+  horizontal: "FILL"
+})
 ```
 
 **Content Region:**
 ```typescript
-figma_create_frame({
+// 1. Frame olustur
+const content = figma_create_frame({
   name: "Content",
   parentId: mainFrameId,
   autoLayout: { mode: "VERTICAL", spacing: 16, padding: 16 }
 })
-// layoutSizingVertical: "FILL" ayarla
+
+// 2. KRITIK: Hem horizontal hem vertical FILL
+figma_set_layout_sizing({
+  nodeId: content.nodeId,
+  horizontal: "FILL",
+  vertical: "FILL"
+})
 ```
 
 **Footer Region:**
 ```typescript
-figma_create_frame({
+// 1. Frame olustur
+const footer = figma_create_frame({
   name: "Footer",
   parentId: mainFrameId,
   width: device.width,
   height: 80,
   autoLayout: { mode: "HORIZONTAL", padding: 16 }
+})
+
+// 2. KRITIK: FILL sizing uygula
+figma_set_layout_sizing({
+  nodeId: footer.nodeId,
+  horizontal: "FILL"
 })
 ```
 
@@ -108,7 +131,16 @@ Plan'daki her component icin:
 1. Region'u belirle (header, content, footer)
 2. Uygun region frame'inin ID'sini al
 3. Component'i olustur ve parentId olarak region ID'sini ver
-4. Session'a component'i kaydet
+4. **KRITIK: Hemen FILL sizing uygula:**
+   ```typescript
+   figma_set_layout_sizing({
+     nodeId: component.nodeId,
+     horizontal: "FILL"  // Genislik parent'i doldursun
+   })
+   ```
+5. Session'a component'i kaydet
+
+**ONEMLI**: Her component olusturulduktan HEMEN SONRA `figma_set_layout_sizing` cagrilmali. Bu adim atlanirsa elementler ust uste biner!
 
 ### Adim 5: Session'a Kaydet
 ```
@@ -121,8 +153,24 @@ design_session_add_screen({
 
 ## Onemli Kurallar
 
-- Her zaman parent frame'e auto-layout uygula
-- Component'leri region frame'lerine ekle, ana frame'e degil
-- FILL sizing kullan genislik icin
-- Theme renklerini kullan
-- Session'a her seyi kaydet
+1. **Auto-layout ZORUNLU**: Her frame'e auto-layout uygula
+2. **Region yapisi kullan**: Component'leri direkt ana frame'e degil, region frame'lerine ekle
+3. **FILL sizing KRITIK**:
+   - Her region frame olusturulduktan sonra `figma_set_layout_sizing` cagir
+   - Her component olusturulduktan sonra `figma_set_layout_sizing` cagir
+   - Bu adim atlanirsa tasarim BOZUK cikar!
+4. **Sira onemli**: Frame olustur → FILL sizing uygula → Sonraki frame
+5. **Theme renklerini kullan**: Session'dan theme bilgisini al
+6. **Session'a kaydet**: Her ekran ve component'i kaydet
+
+## Sizing Kurallari
+
+| Element | Horizontal | Vertical |
+|---------|------------|----------|
+| Header | FILL | FIXED (60px) |
+| Content | FILL | FILL |
+| Footer | FILL | FIXED (80px) |
+| Button | FILL | HUG |
+| Input | FILL | HUG |
+| Card | FILL | HUG |
+| Text | FILL | HUG |

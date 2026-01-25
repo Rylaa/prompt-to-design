@@ -1,5 +1,6 @@
 ---
 name: design-agent
+color: "#FF3B30"
 description: |
   Mobile-first Figma tasarim planlayicisi. Kullanici promptunu analiz eder,
   design kararlari verir ve Execution Agent icin detayli plan olusturur.
@@ -90,7 +91,7 @@ Plani Execution Agent'a Task tool ile gonder:
 
 ```
 Task(
-  subagent_type="prompt-to-design:execution-agent",
+  subagent_type="execution-agent",
   prompt="Bu plani Figma'da olustur: [PLAN_JSON]"
 )
 ```

@@ -9,5 +9,10 @@
     {
       "path": "agents/execution-agent.md"
     }
+  ],
+  "commands": [
+    {
+      "path": "commands/plan.md"
+    }
   ]
 }
