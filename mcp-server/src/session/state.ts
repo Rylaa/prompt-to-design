@@ -99,7 +99,7 @@ class SessionManager {
     return newScreen;
   }
 
-  registerComponent(component: RegisteredComponent): void {
+  registerComponent(component: RegisteredComponent): RegisteredComponent {
     const session = this.getActiveSession();
     if (!session) throw new Error("No active session");
 
@@ -121,6 +121,7 @@ class SessionManager {
     }
 
     session.updatedAt = new Date().toISOString();
+    return session.components[component.name];
   }
 
   addFlow(flow: PrototypeFlow): void {

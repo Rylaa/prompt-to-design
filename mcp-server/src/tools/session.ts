@@ -35,6 +35,13 @@ const UpdateSessionSchema = z.object({
     primary: z.string().optional(),
     secondary: z.string().optional(),
     background: z.string().optional(),
+    surface: z.string().optional(),
+    text: z.string().optional(),
+    textSecondary: z.string().optional(),
+    border: z.string().optional(),
+    error: z.string().optional(),
+    success: z.string().optional(),
+    warning: z.string().optional(),
   }).optional(),
   activeScreen: z.string().optional(),
 });
@@ -104,15 +111,22 @@ export function registerSessionTools(server: McpServer): void {
     "Get the current active design session",
     {},
     async () => {
-      const session = sessionManager.getActiveSession();
-      if (!session) {
+      try {
+        const session = sessionManager.getActiveSession();
+        if (!session) {
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: "No active session" }) }],
+          };
+        }
         return {
-          content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: "No active session" }) }],
+          content: [{ type: "text" as const, text: JSON.stringify({ success: true, session }, null, 2) }],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${error instanceof Error ? error.message : "Unknown error"}` }],
+          isError: true,
         };
       }
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify({ success: true, session }, null, 2) }],
-      };
     }
   );
 
@@ -122,15 +136,22 @@ export function registerSessionTools(server: McpServer): void {
     "Update the active design session",
     UpdateSessionSchema.shape,
     async (params) => {
-      const session = sessionManager.updateSession(params as UpdateSessionInput);
-      if (!session) {
+      try {
+        const session = sessionManager.updateSession(params as UpdateSessionInput);
+        if (!session) {
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: "No active session" }) }],
+          };
+        }
         return {
-          content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: "No active session" }) }],
+          content: [{ type: "text" as const, text: JSON.stringify({ success: true, session }, null, 2) }],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${error instanceof Error ? error.message : "Unknown error"}` }],
+          isError: true,
         };
       }
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify({ success: true, session }, null, 2) }],
-      };
     }
   );
 
@@ -171,9 +192,9 @@ export function registerSessionTools(server: McpServer): void {
     RegisterComponentSchema.shape,
     async (params) => {
       try {
-        sessionManager.registerComponent(params);
+        const registeredComponent = sessionManager.registerComponent(params);
         return {
-          content: [{ type: "text" as const, text: JSON.stringify({ success: true, component: params }) }],
+          content: [{ type: "text" as const, text: JSON.stringify({ success: true, component: registeredComponent }) }],
         };
       } catch (error) {
         return {
