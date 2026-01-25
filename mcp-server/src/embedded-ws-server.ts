@@ -4,6 +4,14 @@
  */
 
 import { WebSocketServer, WebSocket } from "ws";
+import type {
+  SessionInfo,
+  ListSessionsMessage,
+  SessionsListMessage,
+  ConnectSessionMessage,
+  SessionConnectedMessage
+} from "./types/session.js";
+import { getSessionRegistry } from "./session-registry.js";
 
 // Configuration
 const DEFAULT_PORT = 9001;
@@ -25,7 +33,7 @@ export interface FigmaResponse {
 }
 
 interface Message {
-  type: "COMMAND" | "RESPONSE" | "PING" | "PONG" | "REGISTER";
+  type: "COMMAND" | "RESPONSE" | "PING" | "PONG" | "REGISTER" | "LIST_SESSIONS" | "CONNECT_SESSION";
   id?: string;
   source?: "figma";
   action?: string;
@@ -36,6 +44,7 @@ interface Message {
   message?: string;
   error?: string;
   timestamp?: number;
+  sessionId?: string;
 }
 
 interface FigmaClient {
@@ -43,6 +52,7 @@ interface FigmaClient {
   connectedAt: Date;
   lastPong: Date;
   isAlive: boolean;
+  connectedSessionId: string | null;  // NEW FIELD
 }
 
 type ResponseCallback = (response: FigmaResponse) => void;
@@ -54,9 +64,20 @@ class EmbeddedWSServer {
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private port: number;
   private isRunning: boolean = false;
+  private currentSessionId: string | null = null;
+  private currentSessionName: string = "Unknown Session";
 
   constructor(port: number = DEFAULT_PORT) {
     this.port = port;
+  }
+
+  /**
+   * Bu server'ın session bilgisini ayarla
+   */
+  public setSessionInfo(sessionId: string, sessionName: string): void {
+    this.currentSessionId = sessionId;
+    this.currentSessionName = sessionName;
+    console.error(`🏷️ Session info set: ${sessionId} (${sessionName})`);
   }
 
   /**
@@ -144,7 +165,7 @@ class EmbeddedWSServer {
     switch (message.type) {
       case "REGISTER":
         if (message.source === "figma") {
-          // Replace any existing Figma client
+          // Eğer session ID belirtilmemişse, eski davranış (otomatik bağlan)
           if (this.figmaClient && this.figmaClient.ws !== ws) {
             console.error("⚠️ Replacing existing Figma client");
             this.figmaClient.ws.close();
@@ -155,11 +176,14 @@ class EmbeddedWSServer {
             connectedAt: new Date(),
             lastPong: new Date(),
             isAlive: true,
+            connectedSessionId: this.currentSessionId,
           };
-          console.error("✅ Figma client registered");
+          console.error(`✅ Figma client registered (session: ${this.currentSessionId || "none"})`);
           ws.send(JSON.stringify({
             type: "REGISTERED",
             as: "figma",
+            sessionId: this.currentSessionId,
+            sessionName: this.currentSessionName,
             timestamp: new Date().toISOString(),
           }));
         }
@@ -212,6 +236,61 @@ class EmbeddedWSServer {
           timestamp: Date.now(),
         }));
         break;
+
+      case "LIST_SESSIONS": {
+        // Figma tüm aktif session'ları istiyor
+        const registry = getSessionRegistry();
+        const sessions = registry.getAllSessions().map((s) => ({
+          ...s,
+          isConnected: this.figmaClient?.connectedSessionId === s.sessionId,
+        }));
+
+        ws.send(JSON.stringify({
+          type: "SESSIONS_LIST",
+          sessions,
+        } as SessionsListMessage));
+        console.error(`📋 Sessions list sent (${sessions.length} sessions)`);
+        break;
+      }
+
+      case "CONNECT_SESSION": {
+        const connectMsg = message as unknown as ConnectSessionMessage;
+        const targetSessionId = connectMsg.sessionId;
+
+        // Bu session'a mı bağlanmak istiyor?
+        if (targetSessionId !== this.currentSessionId) {
+          ws.send(JSON.stringify({
+            type: "SESSION_CONNECTED",
+            success: false,
+            error: `This is session ${this.currentSessionId}, not ${targetSessionId}`,
+          }));
+          break;
+        }
+
+        // Bağlantıyı kabul et
+        if (this.figmaClient && this.figmaClient.ws !== ws) {
+          console.error("⚠️ Replacing existing Figma client");
+          this.figmaClient.ws.close();
+        }
+
+        this.figmaClient = {
+          ws,
+          connectedAt: new Date(),
+          lastPong: new Date(),
+          isAlive: true,
+          connectedSessionId: this.currentSessionId,
+        };
+
+        console.error(`✅ Figma client connected to session: ${this.currentSessionId}`);
+
+        ws.send(JSON.stringify({
+          type: "SESSION_CONNECTED",
+          success: true,
+          sessionId: this.currentSessionId,
+          sessionName: this.currentSessionName,
+        } as SessionConnectedMessage));
+        break;
+      }
 
       default:
         console.error(`❓ Unknown message type: ${message.type}`);
@@ -320,11 +399,15 @@ class EmbeddedWSServer {
     serverRunning: boolean;
     figmaConnected: boolean;
     figmaLastPong: Date | null;
+    sessionId: string | null;
+    sessionName: string;
   } {
     return {
       serverRunning: this.isRunning,
       figmaConnected: this.isFigmaConnected(),
       figmaLastPong: this.figmaClient?.lastPong || null,
+      sessionId: this.currentSessionId,
+      sessionName: this.currentSessionName,
     };
   }
 
