@@ -14,6 +14,8 @@ import { createMacOSComponent, listMacOSComponents } from "./components/apple-ma
 import { createLiquidGlassComponent, listLiquidGlassComponents } from "./components/liquid-glass";
 import { listComponents, ComponentLibrary } from "./components";
 import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "./icons/lucide-svgs";
+import { calculatePosition, getLayoutContextFromNode } from "./positioning/index";
+import type { PositionRequest } from "./positioning/types";
 
 // UI'ı göster
 figma.showUI(__html__, { width: 300, height: 400 });
@@ -344,6 +346,56 @@ function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>
   }
 }
 
+/**
+ * Smart positioning uygular
+ * Manuel x/y verilmişse onları kullanır, yoksa region-based pozisyon hesaplar
+ */
+function applySmartPosition(
+  node: SceneNode,
+  parent: FrameNode | ComponentNode | null,
+  params: {
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+    region?: "header" | "content" | "footer";
+    alignment?: "start" | "center" | "end" | "stretch";
+  }
+): void {
+  // Manuel pozisyon verilmişse onu kullan
+  if (params.x !== undefined && params.y !== undefined) {
+    if ("x" in node) node.x = params.x;
+    if ("y" in node) node.y = params.y;
+    return;
+  }
+
+  // Parent yoksa skip
+  if (!parent) return;
+
+  // Auto-layout parent için sizing ayarla, pozisyon atama
+  if (parent.layoutMode !== "NONE") {
+    if ("layoutSizingHorizontal" in node) {
+      node.layoutSizingHorizontal = params.alignment === "stretch" ? "FILL" : "FIXED";
+    }
+    return;
+  }
+
+  // Smart positioning uygula
+  const context = getLayoutContextFromNode(parent);
+  const request: PositionRequest = {
+    width: params.width,
+    height: params.height,
+    region: params.region,
+    alignment: params.alignment,
+  };
+
+  const result = calculatePosition(context, request);
+
+  if ("x" in node) node.x = result.x;
+  if ("y" in node) node.y = result.y;
+  if ("resize" in node) node.resize(result.width, result.height);
+}
+
 // ============================================================================
 // Komut İşleyiciler
 // ============================================================================
@@ -353,13 +405,27 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
   applyCommonFrameProps(frame, params);
 
   // Parent'a ekle
+  let parentNode: FrameNode | ComponentNode | null = null;
   if (params.parentId) {
     const parent = await getNode(params.parentId as string);
     if (parent && "appendChild" in parent) {
-      (parent as FrameNode).appendChild(frame);
+      parentNode = parent as FrameNode | ComponentNode;
+      parentNode.appendChild(frame);
     }
   } else {
     figma.currentPage.appendChild(frame);
+  }
+
+  // Smart positioning uygula (region varsa)
+  if (parentNode && params.region) {
+    applySmartPosition(frame, parentNode, {
+      x: params.x as number | undefined,
+      y: params.y as number | undefined,
+      width: (params.width as number) || 400,
+      height: (params.height as number) || 300,
+      region: params.region as "header" | "content" | "footer",
+      alignment: (params.alignment as "start" | "center" | "end" | "stretch") || "stretch",
+    });
   }
 
   registerNode(frame);
