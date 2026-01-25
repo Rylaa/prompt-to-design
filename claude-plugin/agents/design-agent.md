@@ -230,6 +230,170 @@ Kullanici "liquid glass" veya "iOS 26" isterse → library: "liquid-glass"
 | Card | FILL | - (auto) |
 | Text | FILL | - (auto) |
 
+## UI/UX PRENSIPLERI (KRITIK!)
+
+### Visual Hierarchy
+1. **Buyuk degerler onde** - Hero metrikleri buyuk font (32-48px)
+2. **Label kucuk, deger buyuk** - Label 12px muted, Value 24px bold
+3. **Spacing tutarli** - Ayni seviyedeki elementler ayni spacing
+4. **Grupla** - Iliskili elementleri card icinde topla
+
+### Typography Scale (Dark Theme)
+| Kullanim | Font Size | Weight | Renk |
+|----------|-----------|--------|------|
+| Hero Metric | 32-48px | 700 | #FAFAFA |
+| Card Title | 14px | 600 | #FAFAFA |
+| Card Value | 24px | 700 | #FAFAFA |
+| Card Label | 12px | 500 | #A1A1AA |
+| Body Text | 14px | 400 | #FAFAFA |
+| Muted Text | 12px | 400 | #71717A |
+
+### Trend Indicator
+- Pozitif: #22C55E (yesil) + "↑" veya "+%"
+- Negatif: #EF4444 (kirmizi) + "↓" veya "-%"
+- Notr: #A1A1AA (gri)
+
+---
+
+## DASHBOARD PATTERN'LERI
+
+### Pattern 1: Stat Card (Kucuk Metrik)
+4'lu row icin kullan (Active Users, Signups, Churn, ARPU)
+
+```typescript
+// Stat Card = Frame + Label + Value + Trend
+const statCard = figma_create_frame({
+  name: "StatCard",
+  parentId: rowFrame.nodeId,
+  fill: { type: "SOLID", color: "#18181B" },
+  cornerRadius: 12,
+  autoLayout: { mode: "VERTICAL", spacing: 4, padding: 16 }
+})
+figma_set_layout_sizing({ nodeId: statCard.nodeId, horizontal: "FILL" })
+
+// Label (kucuk, muted)
+const label = figma_create_text({
+  content: "Active Users",
+  parentId: statCard.nodeId,
+  style: { fontSize: 12, fontWeight: 500 },
+  fill: { type: "SOLID", color: "#A1A1AA" }
+})
+
+// Value (buyuk, bold)
+const value = figma_create_text({
+  content: "8,492",
+  parentId: statCard.nodeId,
+  style: { fontSize: 24, fontWeight: 700 },
+  fill: { type: "SOLID", color: "#FAFAFA" }
+})
+
+// Trend (kucuk, renkli)
+const trend = figma_create_text({
+  content: "+5.2%",
+  parentId: statCard.nodeId,
+  style: { fontSize: 12, fontWeight: 500 },
+  fill: { type: "SOLID", color: "#22C55E" }  // yesil = pozitif
+})
+```
+
+### Pattern 2: Hero Metric Card (Buyuk Metrik)
+Ana metrik icin kullan (MRR, Revenue, etc.)
+
+```typescript
+// Hero Card = Gradient background + Title + Big Value
+const heroCard = figma_create_frame({
+  name: "HeroCard",
+  parentId: content.nodeId,
+  fill: {
+    type: "GRADIENT",
+    gradient: {
+      type: "LINEAR",
+      angle: 135,
+      stops: [
+        { position: 0, color: "#7C3AED" },  // violet
+        { position: 1, color: "#2563EB" }   // blue
+      ]
+    }
+  },
+  cornerRadius: 16,
+  autoLayout: { mode: "VERTICAL", spacing: 8, padding: 24 }
+})
+figma_set_layout_sizing({ nodeId: heroCard.nodeId, horizontal: "FILL" })
+
+// Title
+figma_create_text({
+  content: "Monthly Recurring Revenue",
+  parentId: heroCard.nodeId,
+  style: { fontSize: 14, fontWeight: 500 },
+  fill: { type: "SOLID", color: "#FFFFFF" }
+})
+
+// Big Value
+figma_create_text({
+  content: "$124,500",
+  parentId: heroCard.nodeId,
+  style: { fontSize: 40, fontWeight: 700 },
+  fill: { type: "SOLID", color: "#FFFFFF" }
+})
+```
+
+### Pattern 3: Stats Row (2x2 veya 1x4 Grid)
+```typescript
+// 2x2 Grid icin: 2 satir, her satirda 2 card
+const row1 = figma_create_frame({
+  name: "StatsRow1",
+  parentId: content.nodeId,
+  autoLayout: { mode: "HORIZONTAL", spacing: 12 }
+})
+figma_set_layout_sizing({ nodeId: row1.nodeId, horizontal: "FILL" })
+
+// Bu row'a 2 stat card ekle, her biri FILL olacak
+// ... stat card 1 ...
+// ... stat card 2 ...
+
+const row2 = figma_create_frame({
+  name: "StatsRow2",
+  parentId: content.nodeId,
+  autoLayout: { mode: "HORIZONTAL", spacing: 12 }
+})
+figma_set_layout_sizing({ nodeId: row2.nodeId, horizontal: "FILL" })
+// ... stat card 3 ...
+// ... stat card 4 ...
+```
+
+### Pattern 4: Section Header
+```typescript
+const sectionHeader = figma_create_text({
+  content: "Revenue Overview",
+  parentId: content.nodeId,
+  style: { fontSize: 18, fontWeight: 600 },
+  fill: { type: "SOLID", color: "#FAFAFA" }
+})
+```
+
+---
+
+## SHADCN THEME KURALI (SUPER KRITIK!)
+
+**HER shadcn component'e theme: "dark" veya "light" GECMEK ZORUNLU!**
+
+```typescript
+// YANLIS - varsayilan "light" olur, beyaz card cikar!
+figma_create_shadcn_component({
+  component: "card",
+  parentId: content.nodeId
+})
+
+// DOGRU - theme belirtilmis
+figma_create_shadcn_component({
+  component: "card",
+  theme: "dark",  // ZORUNLU!
+  parentId: content.nodeId
+})
+```
+
+---
+
 ## Workflow Ozeti
 
 ```
@@ -239,8 +403,13 @@ Kullanici promptu geldi
 2. design_session_create()
 3. Ana frame olustur (device boyutlari)
 4. Region frame'leri olustur + FILL sizing
-5. Component'leri ekle + FILL sizing
-6. design_session_add_screen()
+5. Component'leri PATTERN'lere gore olustur:
+   - Hero card → gradient, buyuk deger
+   - Stat cards → 2x2 grid, label+value+trend
+   - Section headers → 18px bold
+   - Charts → card icinde placeholder
+6. HER component'e FILL sizing uygula
+7. design_session_add_screen()
         ↓
 Tasarim Figma'da HAZIR
 ```
