@@ -74,6 +74,8 @@ export interface TextStyleConfig {
   lineHeight?: number | string;
   letterSpacing?: number;
   textAlign?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
+  textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE";
+  textDecoration?: "NONE" | "UNDERLINE" | "STRIKETHROUGH";
 }
 
 export interface StrokeConfig {
@@ -88,6 +90,6 @@ export interface FinalizeOptions {
   y?: number;
 }
 
-// Handler tipleri
+// Handler types
 export type CommandHandler = (params: Record<string, unknown>) => Promise<Record<string, unknown>> | Record<string, unknown>;
 export type NoParamsHandler = () => Promise<Record<string, unknown>> | Record<string, unknown>;
