@@ -164,7 +164,8 @@ Dashboard [VERTICAL, FILL]        → Ana frame: VERTICAL auto-layout, FILL sizi
 ```
 
 Her satir:
-- `[VERTICAL/HORIZONTAL]` → autoLayout.mode
+- `[VERTICAL/HORIZONTAL]` → Frame icin autoLayout.mode
+- `[TEXT/ICON/...]` → Node tipi (auto-layout yok)
 - `[FILL]` → layoutSizing: FILL
 - `[HUG]` → layoutSizing: HUG
 - `[FIXED WxH]` → sabit boyut
