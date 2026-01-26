@@ -1269,6 +1269,42 @@ export const GetModeInputSchema = z.object({}).strict();
 export const ConnectionStatusInputSchema = z.object({}).strict();
 
 // ============================================================================
+// Linter Schemas
+// ============================================================================
+
+export const LintLayoutInputSchema = z.object({
+  nodeId: z.string().describe("Root node ID to lint"),
+  rules: z.array(z.enum([
+    "NO_ABSOLUTE_POSITION",
+    "AUTO_LAYOUT_REQUIRED",
+    "VALID_SIZING_MODE",
+    "SPACING_TOKEN_ONLY",
+    "FILL_REQUIRED_ON_ROOT"
+  ])).optional().default([
+    "NO_ABSOLUTE_POSITION",
+    "AUTO_LAYOUT_REQUIRED",
+    "VALID_SIZING_MODE"
+  ]).describe("Rules to check"),
+  recursive: z.boolean().optional().default(true).describe("Check children recursively"),
+}).strict();
+
+export type LintLayoutInput = z.infer<typeof LintLayoutInputSchema>;
+
+export interface LintViolation {
+  nodeId: string;
+  nodeName: string;
+  rule: string;
+  message: string;
+  severity: "error" | "warning";
+}
+
+export interface LintResult {
+  passed: boolean;
+  violations: LintViolation[];
+  checkedNodes: number;
+}
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
