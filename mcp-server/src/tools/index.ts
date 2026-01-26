@@ -17,14 +17,10 @@ import { registerManipulationTools } from "./manipulation.js";
 import { registerQueryTools } from "./query.js";
 import { registerComponentLibraryTools } from "./component-library.js";
 import { registerStylesVariablesTools } from "./styles-variables.js";
-import { registerExportTools } from "./export.js";
 import { registerTransformTools } from "./transform.js";
 import { registerMaskTools } from "./masks.js";
 import { registerBooleanTools } from "./boolean.js";
 import { registerPluginDataTools } from "./plugin-data.js";
-import { registerPrototypeTools } from "./prototype.js";
-import { registerFigjamTools } from "./figjam.js";
-import { registerAnnotationTools } from "./annotations.js";
 import { registerStorageTools } from "./storage.js";
 import { registerMediaTools } from "./media.js";
 import { registerViewportTools } from "./viewport.js";
@@ -71,21 +67,9 @@ export function registerAllTools(server: McpServer): void {
   // Visual Debug Mode
   registerDebugTools(server);
 
-  // Export
-  registerExportTools(server);
-
   // Data storage
   registerPluginDataTools(server);
   registerStorageTools(server);
-
-  // Prototyping
-  registerPrototypeTools(server);
-
-  // FigJam specific
-  registerFigjamTools(server);
-
-  // Dev Mode
-  registerAnnotationTools(server);
 
   // Media
   registerMediaTools(server);

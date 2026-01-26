@@ -191,6 +191,61 @@ async function getNode(nodeId: string): Promise<SceneNode | null> {
   return null;
 }
 
+/**
+ * Node'u ID ile al, bulunamazsa hata fırlat
+ * @param nodeId - Figma node ID
+ * @param errorMessage - Özel hata mesajı (opsiyonel)
+ */
+async function getNodeOrThrow(nodeId: string, errorMessage?: string): Promise<SceneNode> {
+  const node = await getNode(nodeId);
+  if (!node) {
+    throw new Error(errorMessage || `Node not found: ${nodeId}`);
+  }
+  return node;
+}
+
+/**
+ * Node'u parent'a veya sayfaya ekle
+ * @param node - Eklenecek node
+ * @param parentId - Parent frame ID (opsiyonel, yoksa sayfaya eklenir)
+ */
+async function attachToParentOrPage(node: SceneNode, parentId?: string): Promise<void> {
+  if (parentId) {
+    const parent = await getNode(parentId);
+    if (parent && "appendChild" in parent) {
+      (parent as FrameNode).appendChild(node);
+    }
+  } else {
+    figma.currentPage.appendChild(node);
+  }
+}
+
+/**
+ * Node pozisyonunu ayarla
+ * @param node - Pozisyonu ayarlanacak node
+ * @param x - X koordinatı (opsiyonel)
+ * @param y - Y koordinatı (opsiyonel)
+ */
+function setPosition(node: SceneNode, x?: number, y?: number): void {
+  if (x !== undefined) node.x = x;
+  if (y !== undefined) node.y = y;
+}
+
+/**
+ * Node'u finalize et: parent'a ekle ve pozisyonu ayarla
+ * Yaygın kullanılan pattern'i tek bir çağrıda birleştirir
+ */
+interface FinalizeOptions {
+  parentId?: string;
+  x?: number;
+  y?: number;
+}
+
+async function finalizeNode(node: SceneNode, options: FinalizeOptions): Promise<void> {
+  await attachToParentOrPage(node, options.parentId);
+  setPosition(node, options.x, options.y);
+}
+
 // ============================================================================
 // Yardımcı Fonksiyonlar
 // ============================================================================
@@ -542,6 +597,17 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
   } else {
     // Varsayılan olarak clipsContent = true
     frame.clipsContent = true;
+  }
+
+  // Layout sizing - parent Auto Layout içindeki davranışı belirler
+  // FILL: Parent'ın genişliğini/yüksekliğini doldur
+  // HUG: İçeriğe göre boyutlan
+  // FIXED: Sabit boyut
+  if (params.layoutSizingHorizontal) {
+    frame.layoutSizingHorizontal = params.layoutSizingHorizontal as "FIXED" | "HUG" | "FILL";
+  }
+  if (params.layoutSizingVertical) {
+    frame.layoutSizingVertical = params.layoutSizingVertical as "FIXED" | "HUG" | "FILL";
   }
 
   registerNode(frame);
@@ -5330,6 +5396,167 @@ async function handleGetDebugInfo(params: Record<string, unknown>): Promise<{
 // Komut Yönlendirici
 // ============================================================================
 
+// Handler tipleri
+type CommandHandler = (params: Record<string, unknown>) => Promise<Record<string, unknown>> | Record<string, unknown>;
+type NoParamsHandler = () => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+// Komut handler map'i - switch yerine daha temiz ve genişletilebilir
+const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
+  // === Temel Şekiller ===
+  CREATE_FRAME: handleCreateFrame,
+  CREATE_RECTANGLE: handleCreateRectangle,
+  CREATE_ELLIPSE: handleCreateEllipse,
+  CREATE_LINE: handleCreateLine,
+  CREATE_POLYGON: handleCreatePolygon,
+  CREATE_STAR: handleCreateStar,
+  CREATE_VECTOR: handleCreateVector,
+
+  // === Metin ===
+  CREATE_TEXT: handleCreateText,
+  SET_TEXT_CONTENT: handleSetTextContent,
+  LIST_AVAILABLE_FONTS: handleListAvailableFonts,
+
+  // === UI Bileşenleri ===
+  CREATE_BUTTON: handleCreateButton,
+  CREATE_INPUT: handleCreateInput,
+  CREATE_CARD: handleCreateCard,
+  CREATE_UI_COMPONENT: handleCreateUIComponent,
+  CREATE_KPI_CARD: handleCreateKPICard,
+  CREATE_ICON: handleCreateIcon,
+  LIST_ICONS: handleListIcons,
+
+  // === Tasarım Sistemleri ===
+  SET_THEME: handleSetTheme,
+  SET_THEME_TOKENS: handleSetThemeTokens,
+  CREATE_SHADCN_COMPONENT: handleCreateShadcnComponent,
+  CREATE_APPLE_COMPONENT: handleCreateAppleComponent,
+  CREATE_LIQUID_GLASS_COMPONENT: handleCreateLiquidGlassComponent,
+  LIST_COMPONENTS: handleListComponents,
+  GET_DESIGN_TOKENS: handleGetDesignTokens,
+
+  // === Layout ===
+  SET_AUTOLAYOUT: handleSetAutoLayout,
+  SET_CONSTRAINTS: handleSetConstraints,
+  SET_LAYOUT_SIZING: handleSetLayoutSizing,
+  SET_LAYOUT_GRID: handleSetLayoutGrid,
+  GET_LAYOUT_GRID: handleGetLayoutGrid,
+  REORDER_CHILDREN: handleReorderChildren,
+
+  // === Styling ===
+  SET_FILL: handleSetFill,
+  SET_STROKE: handleSetStroke,
+  SET_EFFECTS: handleSetEffects,
+  SET_OPACITY: handleSetOpacity,
+  SET_BLEND_MODE: handleSetBlendMode,
+  SET_CORNER_RADIUS: handleSetCornerRadius,
+
+  // === Transform ===
+  SET_ROTATION: handleSetRotation,
+  SET_TRANSFORM: handleSetTransform,
+  SCALE_NODE: handleScaleNode,
+  SET_POSITION: handleSetPosition,
+  RESIZE_NODE: handleResizeNode,
+
+  // === Node İşlemleri ===
+  DELETE_NODE: handleDeleteNode,
+  CLONE_NODE: handleCloneNode,
+  MODIFY_NODE: handleModifyNode,
+  MOVE_TO_PARENT: handleMoveToParent,
+  APPEND_CHILD: handleAppendChild,
+  CREATE_GROUP: handleCreateGroup,
+  UNGROUP: handleUngroup,
+  FLATTEN_NODE: handleFlattenNode,
+  SET_VISIBILITY: handleSetVisibility,
+  SET_LOCKED: handleSetLocked,
+
+  // === Bileşenler ===
+  CREATE_COMPONENT: handleCreateComponent,
+  CREATE_COMPONENT_INSTANCE: handleCreateComponentInstance,
+  GET_LOCAL_COMPONENTS: handleGetLocalComponents,
+  REGISTER_COMPONENT: handleRegisterComponent,
+
+  // === Component Slots ===
+  REGISTER_COMPONENT_SLOT: handleRegisterComponentSlot,
+  CREATE_FROM_SLOT: handleCreateFromSlot,
+  LIST_COMPONENT_SLOTS: handleListComponentSlots,
+
+  // === Boolean & Mask ===
+  BOOLEAN_OPERATION: handleBooleanOperation,
+  CREATE_MASK: handleCreateMask,
+  SET_MASK: handleSetMask,
+
+  // === Görüntü & Video ===
+  CREATE_IMAGE: handleCreateImage,
+  SET_IMAGE_FILL: handleSetImageFill,
+  CREATE_VIDEO: handleCreateVideo,
+  SET_VIDEO_FILL: handleSetVideoFill,
+  CREATE_LINK_PREVIEW: handleCreateLinkPreview,
+  SET_VECTOR_PATHS: handleSetVectorPaths,
+
+  // === Stiller ===
+  GET_LOCAL_STYLES: handleGetLocalStyles,
+  CREATE_PAINT_STYLE: handleCreatePaintStyle,
+  CREATE_TEXT_STYLE: handleCreateTextStyle,
+  CREATE_EFFECT_STYLE: handleCreateEffectStyle,
+  APPLY_STYLE: handleApplyStyle,
+
+  // === Değişkenler (Variables) ===
+  GET_LOCAL_VARIABLES: handleGetLocalVariables,
+  GET_VARIABLE_COLLECTIONS: handleGetVariableCollections,
+  CREATE_VARIABLE: handleCreateVariable,
+  CREATE_VARIABLE_COLLECTION: handleCreateVariableCollection,
+  BIND_VARIABLE: handleBindVariable,
+
+  // === Sorgu & Seçim ===
+  GET_SELECTION: handleGetSelection,
+  SELECT_NODES: handleSelectNodes,
+  FIND_NODES: handleFindNodes,
+  FIND_CHILDREN: handleFindChildren,
+  GET_NODE_INFO: handleGetNodeInfo,
+  GET_PAGE_INFO: handleGetPageInfo,
+
+  // === Plugin Data ===
+  SET_PLUGIN_DATA: handleSetPluginData,
+  GET_PLUGIN_DATA: handleGetPluginData,
+  GET_ALL_PLUGIN_DATA: handleGetAllPluginData,
+  DELETE_PLUGIN_DATA: handleDeletePluginData,
+
+  // === Shared Plugin Data ===
+  SET_SHARED_PLUGIN_DATA: handleSetSharedPluginData,
+  GET_SHARED_PLUGIN_DATA: handleGetSharedPluginData,
+  GET_SHARED_PLUGIN_DATA_KEYS: handleGetSharedPluginDataKeys,
+
+  // === Client Storage ===
+  CLIENT_STORAGE_SET: handleClientStorageSet,
+  CLIENT_STORAGE_GET: handleClientStorageGet,
+  CLIENT_STORAGE_DELETE: handleClientStorageDelete,
+  CLIENT_STORAGE_KEYS: handleClientStorageKeys,
+
+  // === Viewport ===
+  GET_VIEWPORT: handleGetViewport,
+  SET_VIEWPORT: handleSetViewport,
+  SCROLL_TO_NODE: handleScrollToNode,
+  ZOOM_TO_FIT: handleZoomToFit,
+  ZOOM_TO_SELECTION: handleZoomToSelection,
+
+  // === Sayfa Yönetimi ===
+  GET_CURRENT_PAGE: handleGetCurrentPage,
+  SET_CURRENT_PAGE: handleSetCurrentPage,
+  CREATE_PAGE: handleCreatePage,
+  GET_ALL_PAGES: handleGetAllPages,
+
+  // === Editor Bilgisi ===
+  GET_EDITOR_TYPE: handleGetEditorType,
+  GET_MODE: handleGetMode,
+
+  // === Layout Linting ===
+  LINT_LAYOUT: handleLintLayout,
+
+  // === Visual Debug Mode ===
+  TOGGLE_DEBUG_MODE: handleToggleDebugMode,
+  GET_DEBUG_INFO: handleGetDebugInfo,
+};
+
 async function handleCommand(command: Command): Promise<Record<string, unknown>> {
   const { action, params } = command;
 
@@ -5338,312 +5565,15 @@ async function handleCommand(command: Command): Promise<Record<string, unknown>>
     console.log(`[DEBUG] ${action} params:`, JSON.stringify(params, null, 2));
   }
 
-  switch (action) {
-    case "CREATE_FRAME":
-      return handleCreateFrame(params);
-    case "CREATE_RECTANGLE":
-      return handleCreateRectangle(params);
-    case "CREATE_ELLIPSE":
-      return handleCreateEllipse(params);
-    case "CREATE_TEXT":
-      return handleCreateText(params);
-    case "CREATE_BUTTON":
-      return handleCreateButton(params);
-    case "CREATE_INPUT":
-      return handleCreateInput(params);
-    case "CREATE_CARD":
-      return handleCreateCard(params);
-    case "SET_AUTOLAYOUT":
-      return handleSetAutoLayout(params);
-    case "SET_FILL":
-      return handleSetFill(params);
-    case "SET_EFFECTS":
-      return handleSetEffects(params);
-    case "MODIFY_NODE":
-      return handleModifyNode(params);
-    case "CREATE_COMPONENT":
-      return handleCreateComponent(params);
-    case "CREATE_COMPONENT_INSTANCE":
-      return handleCreateComponentInstance(params);
-    case "GET_LOCAL_COMPONENTS":
-      return handleGetLocalComponents();
-    case "REGISTER_COMPONENT":
-      return handleRegisterComponent(params);
-    case "CREATE_UI_COMPONENT":
-      return handleCreateUIComponent(params);
-    case "CREATE_KPI_CARD":
-      return handleCreateKPICard(params);
-    case "GET_SELECTION":
-      return handleGetSelection();
-    case "APPEND_CHILD":
-      return handleAppendChild(params);
-    case "MOVE_TO_PARENT":
-      return handleMoveToParent(params);
-    case "DELETE_NODE":
-      return handleDeleteNode(params);
-    case "CLONE_NODE":
-      return handleCloneNode(params);
-    // Node manipulation actions
-    case "RESIZE_NODE":
-      return handleResizeNode(params);
-    case "SET_POSITION":
-      return handleSetPosition(params);
-    case "SET_LAYOUT_SIZING":
-      return handleSetLayoutSizing(params);
-    case "GET_NODE_INFO":
-      return handleGetNodeInfo(params);
-    case "SET_CONSTRAINTS":
-      return handleSetConstraints(params);
-    case "REORDER_CHILDREN":
-      return handleReorderChildren(params);
-    case "SET_VISIBILITY":
-      return handleSetVisibility(params);
-    case "SET_OPACITY":
-      return handleSetOpacity(params);
-    case "SET_STROKE":
-      return handleSetStroke(params);
-    case "CREATE_LINE":
-      return handleCreateLine(params);
-    case "CREATE_GROUP":
-      return handleCreateGroup(params);
-    case "SET_TEXT_CONTENT":
-      return handleSetTextContent(params);
-    case "SET_CORNER_RADIUS":
-      return handleSetCornerRadius(params);
-    case "GET_PAGE_INFO":
-      return handleGetPageInfo();
-    case "SELECT_NODES":
-      return handleSelectNodes(params);
-    // Extended component library actions
-    case "SET_THEME":
-      return handleSetTheme(params);
-    case "SET_THEME_TOKENS":
-      return handleSetThemeTokens(params);
-    case "CREATE_SHADCN_COMPONENT":
-      return handleCreateShadcnComponent(params);
-    case "CREATE_APPLE_COMPONENT":
-      return handleCreateAppleComponent(params);
-    case "CREATE_LIQUID_GLASS_COMPONENT":
-      return handleCreateLiquidGlassComponent(params);
-    case "LIST_COMPONENTS":
-      return handleListComponents(params);
-    case "GET_DESIGN_TOKENS":
-      return handleGetDesignTokens(params);
-    // Lucide Icon actions
-    case "CREATE_ICON":
-      return handleCreateIcon(params);
-    case "LIST_ICONS":
-      return handleListIcons();
-    // New feature actions - Boolean Operations
-    case "BOOLEAN_OPERATION":
-      return handleBooleanOperation(params);
-    // Image handling
-    case "CREATE_IMAGE":
-      return handleCreateImage(params);
-    case "SET_IMAGE_FILL":
-      return handleSetImageFill(params);
-    // Vector operations
-    case "CREATE_VECTOR":
-      return handleCreateVector(params);
-    case "SET_VECTOR_PATHS":
-      return handleSetVectorPaths(params);
-    // Blend modes
-    case "SET_BLEND_MODE":
-      return handleSetBlendMode(params);
-    // Style system
-    case "GET_LOCAL_STYLES":
-      return handleGetLocalStyles(params);
-    case "CREATE_PAINT_STYLE":
-      return handleCreatePaintStyle(params);
-    case "CREATE_TEXT_STYLE":
-      return handleCreateTextStyle(params);
-    case "CREATE_EFFECT_STYLE":
-      return handleCreateEffectStyle(params);
-    case "APPLY_STYLE":
-      return handleApplyStyle(params);
-    // Variables API
-    case "GET_LOCAL_VARIABLES":
-      return handleGetLocalVariables(params);
-    case "GET_VARIABLE_COLLECTIONS":
-      return handleGetVariableCollections();
-    case "CREATE_VARIABLE":
-      return handleCreateVariable(params);
-    case "CREATE_VARIABLE_COLLECTION":
-      return handleCreateVariableCollection(params);
-    case "BIND_VARIABLE":
-      return handleBindVariable(params);
-    // Export
-    case "EXPORT_NODE":
-      return handleExportNode(params);
-    case "EXPORT_MULTIPLE":
-      return handleExportMultiple(params);
-    // Transform
-    case "SET_ROTATION":
-      return handleSetRotation(params);
-    case "SET_TRANSFORM":
-      return handleSetTransform(params);
-    case "SCALE_NODE":
-      return handleScaleNode(params);
-    // Masks
-    case "CREATE_MASK":
-      return handleCreateMask(params);
-    case "SET_MASK":
-      return handleSetMask(params);
-    // Find/Query
-    case "FIND_NODES":
-      return handleFindNodes(params);
-    case "FIND_CHILDREN":
-      return handleFindChildren(params);
-    // Plugin Data
-    case "SET_PLUGIN_DATA":
-      return handleSetPluginData(params);
-    case "GET_PLUGIN_DATA":
-      return handleGetPluginData(params);
-    case "GET_ALL_PLUGIN_DATA":
-      return handleGetAllPluginData(params);
-    case "DELETE_PLUGIN_DATA":
-      return handleDeletePluginData(params);
-    // Layout Grid
-    case "SET_LAYOUT_GRID":
-      return handleSetLayoutGrid(params);
-    case "GET_LAYOUT_GRID":
-      return handleGetLayoutGrid(params);
-    // Additional Shapes
-    case "CREATE_POLYGON":
-      return handleCreatePolygon(params);
-    case "CREATE_STAR":
-      return handleCreateStar(params);
-    // Flatten
-    case "FLATTEN_NODE":
-      return handleFlattenNode(params);
-    // Font Enumeration
-    case "LIST_AVAILABLE_FONTS":
-      return handleListAvailableFonts(params);
-    // Ungroup
-    case "UNGROUP":
-      return handleUngroup(params);
-    // Lock/Unlock
-    case "SET_LOCKED":
-      return handleSetLocked(params);
-    // Prototype/Interactions
-    case "SET_REACTIONS":
-      return handleSetReactions(params);
-    case "GET_REACTIONS":
-      return handleGetReactions(params);
-    case "ADD_REACTION":
-      return handleAddReaction(params);
-    case "REMOVE_REACTIONS":
-      return handleRemoveReactions(params);
-    case "SET_FLOW_STARTING_POINT":
-      return handleSetFlowStartingPoint(params);
-    case "GET_FLOW_STARTING_POINTS":
-      return handleGetFlowStartingPoints();
-    case "REMOVE_FLOW_STARTING_POINT":
-      return handleRemoveFlowStartingPoint(params);
-    // New Node Types (FigJam & Design)
-    case "CREATE_STICKY":
-      return handleCreateSticky(params);
-    case "CREATE_SECTION":
-      return handleCreateSection(params);
-    case "SET_SECTION_CONTENTS_HIDDEN":
-      return handleSetSectionContentsHidden(params);
-    case "CREATE_CONNECTOR":
-      return handleCreateConnector(params);
-    case "UPDATE_CONNECTOR":
-      return handleUpdateConnector(params);
-    case "CREATE_SLICE":
-      return handleCreateSlice(params);
-    case "CREATE_CODE_BLOCK":
-      return handleCreateCodeBlock(params);
-    case "UPDATE_CODE_BLOCK":
-      return handleUpdateCodeBlock(params);
-    case "CREATE_TABLE":
-      return handleCreateTable(params);
-    case "UPDATE_TABLE":
-      return handleUpdateTable(params);
-    case "SET_TABLE_CELL":
-      return handleSetTableCell(params);
-    // Annotations API (Dev Mode)
-    case "CREATE_ANNOTATION":
-      return handleCreateAnnotation(params);
-    case "GET_ANNOTATIONS":
-      return handleGetAnnotations(params);
-    case "UPDATE_ANNOTATION":
-      return handleUpdateAnnotation(params);
-    case "REMOVE_ANNOTATION":
-      return handleRemoveAnnotation(params);
-    case "SET_DEV_STATUS":
-      return handleSetDevStatus(params);
-    // Client Storage API
-    case "CLIENT_STORAGE_SET":
-      return handleClientStorageSet(params);
-    case "CLIENT_STORAGE_GET":
-      return handleClientStorageGet(params);
-    case "CLIENT_STORAGE_DELETE":
-      return handleClientStorageDelete(params);
-    case "CLIENT_STORAGE_KEYS":
-      return handleClientStorageKeys();
-    // Shared Plugin Data API
-    case "SET_SHARED_PLUGIN_DATA":
-      return handleSetSharedPluginData(params);
-    case "GET_SHARED_PLUGIN_DATA":
-      return handleGetSharedPluginData(params);
-    case "GET_SHARED_PLUGIN_DATA_KEYS":
-      return handleGetSharedPluginDataKeys(params);
-    // Video/Media Support
-    case "CREATE_VIDEO":
-      return handleCreateVideo(params);
-    case "SET_VIDEO_FILL":
-      return handleSetVideoFill(params);
-    case "CREATE_LINK_PREVIEW":
-      return handleCreateLinkPreview(params);
-    // Viewport Control
-    case "GET_VIEWPORT":
-      return handleGetViewport();
-    case "SET_VIEWPORT":
-      return handleSetViewport(params);
-    case "SCROLL_TO_NODE":
-      return handleScrollToNode(params);
-    case "ZOOM_TO_FIT":
-      return handleZoomToFit(params);
-    case "ZOOM_TO_SELECTION":
-      return handleZoomToSelection();
-    // Page Management
-    case "GET_CURRENT_PAGE":
-      return handleGetCurrentPage();
-    case "SET_CURRENT_PAGE":
-      return handleSetCurrentPage(params);
-    case "CREATE_PAGE":
-      return handleCreatePage(params);
-    case "GET_ALL_PAGES":
-      return handleGetAllPages();
-    // Editor Info
-    case "GET_EDITOR_TYPE":
-      return handleGetEditorType();
-    case "GET_MODE":
-      return handleGetMode();
+  // Handler map'ten ilgili handler'ı al
+  const handler = commandHandlers[action];
 
-    // Layout Linting
-    case "LINT_LAYOUT":
-      return handleLintLayout(params);
-
-    // Visual Debug Mode
-    case "TOGGLE_DEBUG_MODE":
-      return handleToggleDebugMode(params);
-    case "GET_DEBUG_INFO":
-      return handleGetDebugInfo(params);
-
-    // Component Slots - Register and instantiate reusable component slots
-    case "REGISTER_COMPONENT_SLOT":
-      return handleRegisterComponentSlot(params);
-    case "CREATE_FROM_SLOT":
-      return handleCreateFromSlot(params);
-    case "LIST_COMPONENT_SLOTS":
-      return handleListComponentSlots(params);
-
-    default:
-      throw new Error(`Unknown action: ${action}`);
+  if (!handler) {
+    throw new Error(`Unknown action: ${action}`);
   }
+
+  // Handler'ı çağır (parametreli veya parametresiz)
+  return await (handler as CommandHandler)(params);
 }
 
 // ============================================================================
