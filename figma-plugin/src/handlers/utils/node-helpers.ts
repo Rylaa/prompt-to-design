@@ -1,11 +1,29 @@
 // figma-plugin/src/handlers/utils/node-helpers.ts
 // Node operation helper functions
 
-import { FinalizeOptions } from "./types";
+import type { FinalizeOptions } from "./types";
 
-// Gets a node by ID using Figma's async API
+// Node Registry - Track created nodes for fast lookup
+export const nodeRegistry: Map<string, SceneNode> = new Map();
+
+// Register a node in the registry for fast lookup
+export function registerNode(node: SceneNode): void {
+  nodeRegistry.set(node.id, node);
+}
+
+// Remove a node from the registry
+export function unregisterNode(nodeId: string): void {
+  nodeRegistry.delete(nodeId);
+}
+
+// Gets a node by ID - checks registry first, then Figma async API
 // Returns null if not found
 export async function getNode(nodeId: string): Promise<SceneNode | null> {
+  // Check registry first for faster lookup
+  if (nodeRegistry.has(nodeId)) {
+    return nodeRegistry.get(nodeId) || null;
+  }
+  // Fall back to Figma async API
   const node = await figma.getNodeByIdAsync(nodeId);
   if (node && "type" in node) {
     return node as SceneNode;
