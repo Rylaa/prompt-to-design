@@ -1332,6 +1332,31 @@ export interface LintResult {
 }
 
 // ============================================================================
+// Visual Debug Mode Schemas
+// ============================================================================
+
+export const ToggleDebugModeInputSchema = z.object({
+  enabled: z.boolean().describe("Enable or disable debug mode"),
+  nodeId: z.string().optional().describe("Specific node to debug (defaults to all)"),
+  options: z.object({
+    showPadding: z.boolean().default(true).describe("Show padding overlay"),
+    showSpacing: z.boolean().default(true).describe("Show item spacing"),
+    showSizing: z.boolean().default(true).describe("Show FILL/HUG/FIXED labels"),
+    showHierarchy: z.boolean().default(false).describe("Show parent-child lines"),
+  }).optional().describe("Debug visualization options"),
+}).strict();
+
+export type ToggleDebugModeInput = z.infer<typeof ToggleDebugModeInputSchema>;
+
+export const GetDebugInfoInputSchema = z.object({
+  nodeId: z.string().describe("Node to get debug info for"),
+  includeChildren: z.boolean().default(false).describe("Include children info"),
+  format: z.enum(["json", "tree"]).default("json").describe("Output format"),
+}).strict();
+
+export type GetDebugInfoInput = z.infer<typeof GetDebugInfoInputSchema>;
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
