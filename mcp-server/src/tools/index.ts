@@ -34,6 +34,7 @@ import { registerConnectionTools } from "./connection.js";
 import { registerSessionTools } from "./session.js";
 import { registerLinterTools } from "./linter.js";
 import { registerComponentRegistryTools } from "./component-registry.js";
+import { registerDebugTools } from "./debug.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -66,6 +67,9 @@ export function registerAllTools(server: McpServer): void {
 
   // Component Registry (Slot Pattern)
   registerComponentRegistryTools(server);
+
+  // Visual Debug Mode
+  registerDebugTools(server);
 
   // Export
   registerExportTools(server);
