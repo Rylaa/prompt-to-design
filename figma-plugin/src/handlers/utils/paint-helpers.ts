@@ -12,6 +12,7 @@ import type {
   ShadowConfig,
   BlurConfig,
   StrokeConfig,
+  AutoLayoutConfig,
 } from "./types";
 
 /**
@@ -110,9 +111,31 @@ export function createStrokePaint(config: StrokeConfig): SolidPaint {
 }
 
 /**
+ * Maps gradient type from config to Figma gradient type
+ * @param type - Gradient type from config
+ * @returns Figma gradient type string
+ */
+function mapGradientType(
+  type: GradientConfig["type"]
+): "GRADIENT_LINEAR" | "GRADIENT_RADIAL" | "GRADIENT_ANGULAR" | "GRADIENT_DIAMOND" {
+  switch (type) {
+    case "LINEAR":
+      return "GRADIENT_LINEAR";
+    case "RADIAL":
+      return "GRADIENT_RADIAL";
+    case "ANGULAR":
+      return "GRADIENT_ANGULAR";
+    case "DIAMOND":
+      return "GRADIENT_DIAMOND";
+    default:
+      return "GRADIENT_LINEAR";
+  }
+}
+
+/**
  * Creates a gradient paint from a gradient configuration
- * Currently supports LINEAR gradient type
- * @param config - Gradient configuration with stops and angle
+ * Supports LINEAR, RADIAL, ANGULAR, and DIAMOND gradient types
+ * @param config - Gradient configuration with stops, type, and angle
  * @returns GradientPaint object for Figma
  */
 export function createGradientPaint(config: GradientConfig): GradientPaint {
@@ -123,9 +146,10 @@ export function createGradientPaint(config: GradientConfig): GradientPaint {
 
   const angle = config.angle || 0;
   const gradientTransform = convertGradientAngleToTransform(angle);
+  const gradientType = mapGradientType(config.type);
 
   return {
-    type: "GRADIENT_LINEAR",
+    type: gradientType,
     gradientTransform,
     gradientStops: stops,
   };
@@ -200,3 +224,52 @@ export const createFill = convertToFigmaPaint;
  * @returns Effect object
  */
 export const createEffect = convertToFigmaEffect;
+
+/**
+ * Applies auto-layout configuration to a frame node
+ * Sets layout direction, spacing, padding, alignment, and wrap settings
+ * @param node - Target frame node
+ * @param config - Auto-layout configuration
+ */
+export function applyAutoLayout(node: FrameNode, config: AutoLayoutConfig): void {
+  node.layoutMode = config.mode;
+  node.itemSpacing = config.spacing !== undefined ? config.spacing : 0;
+
+  const padding = config.padding !== undefined ? config.padding : 0;
+  node.paddingTop = config.paddingTop !== undefined ? config.paddingTop : padding;
+  node.paddingRight = config.paddingRight !== undefined ? config.paddingRight : padding;
+  node.paddingBottom = config.paddingBottom !== undefined ? config.paddingBottom : padding;
+  node.paddingLeft = config.paddingLeft !== undefined ? config.paddingLeft : padding;
+
+  node.primaryAxisAlignItems = config.primaryAxisAlign || "MIN";
+  node.counterAxisAlignItems = config.counterAxisAlign || "MIN";
+
+  if (config.wrap) {
+    node.layoutWrap = "WRAP";
+    // counterAxisSpacing only applies when wrap is enabled
+    if (config.counterAxisSpacing !== undefined) {
+      node.counterAxisSpacing = config.counterAxisSpacing;
+    }
+  }
+
+  // strokesIncludedInLayout - controls if stroke weight is included in layout calculations
+  if (config.strokesIncludedInLayout !== undefined) {
+    node.strokesIncludedInLayout = config.strokesIncludedInLayout;
+  }
+}
+
+/**
+ * Applies stroke configuration to a node with geometry and strokes
+ * @param node - Target node with geometry and stroke capabilities
+ * @param config - Stroke configuration with color, weight, and alignment
+ */
+export function applyStroke(
+  node: GeometryMixin & MinimalStrokesMixin,
+  config: StrokeConfig
+): void {
+  node.strokes = [createSolidPaint(config.color)];
+  node.strokeWeight = config.weight !== undefined ? config.weight : 1;
+  if ("strokeAlign" in node && config.align) {
+    (node as FrameNode).strokeAlign = config.align;
+  }
+}
