@@ -1989,20 +1989,15 @@ async function handleResizeNode(params: Record<string, unknown>): Promise<{ succ
   return { success: true };
 }
 
-async function handleSetPosition(params: Record<string, unknown>): Promise<{ success: boolean }> {
-  const nodeId = params.nodeId as string;
-  const x = params.x as number;
-  const y = params.y as number;
+async function handleSetPosition(params: Record<string, unknown>): Promise<{ success: boolean; warning: string }> {
+  // x, y koordinat ayarlamak artık YASAK
+  // Auto Layout parent pozisyonu belirler
+  console.warn("SET_POSITION is deprecated. Auto Layout determines position automatically.");
 
-  const node = await getNode(nodeId);
-  if (!node) {
-    throw new Error(`Node ${nodeId} not found`);
-  }
-
-  node.x = x;
-  node.y = y;
-
-  return { success: true };
+  return {
+    success: false,
+    warning: "SET_POSITION is deprecated. Use Auto Layout parent with proper spacing instead. Child position is determined by parent's Auto Layout."
+  };
 }
 
 async function handleSetLayoutSizing(params: Record<string, unknown>): Promise<{ success: boolean }> {
