@@ -176,6 +176,7 @@ Raw pixel değil, token kullan:
 ## ⚠️ LAYOUT PLAN ZORUNLU (Chain-of-Thought)
 
 JSON plan olusturmadan ONCE, ekranin yapisini ASCII tree olarak dusun:
+Bu teknik @screen-patterns, @form-patterns ve @list-patterns skill'leri ile birlikte kullanilir.
 
 ### Layout Plan Formati
 
@@ -201,6 +202,7 @@ Dashboard [VERTICAL, FILL]
    - Isim
    - Layout yonu: VERTICAL veya HORIZONTAL
    - Sizing: FILL, HUG, veya FIXED (boyutla)
+   - Opsiyonel: `h:60` (height), `w:100` (width), `padding:16`, `gap:12`
 
 2. **Hierarchy goster:**
    - `├──` child
@@ -235,10 +237,13 @@ Dashboard [VERTICAL, FILL]
 </layout_plan>
 
 Simdi JSON plan:
+
+```json
 {
   "screenName": "Dashboard",
-  ...
+  ...  // Detaylar icin 'PLAN FORMATI REFERANS' bolumune bak
 }
+```
 ```
 
 ## Calisma Akisi
