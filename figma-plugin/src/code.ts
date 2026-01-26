@@ -1989,15 +1989,19 @@ async function handleResizeNode(params: Record<string, unknown>): Promise<{ succ
   return { success: true };
 }
 
-async function handleSetPosition(params: Record<string, unknown>): Promise<{ success: boolean; warning: string }> {
-  // x, y koordinat ayarlamak artık YASAK
-  // Auto Layout parent pozisyonu belirler
+/**
+ * @deprecated Use Auto Layout for positioning instead.
+ * Child node positions are automatically determined by their parent's Auto Layout configuration.
+ * @throws {Error} Always throws - this operation is no longer supported
+ */
+async function handleSetPosition(params: Record<string, unknown>): Promise<{ success: boolean }> {
+  // Setting x, y coordinates is now forbidden - Auto Layout determines position
   console.warn("SET_POSITION is deprecated. Auto Layout determines position automatically.");
 
-  return {
-    success: false,
-    warning: "SET_POSITION is deprecated. Use Auto Layout parent with proper spacing instead. Child position is determined by parent's Auto Layout."
-  };
+  throw new Error(
+    "SET_POSITION is no longer supported. Use Auto Layout parent with proper spacing instead. " +
+    "Child position is determined by parent's Auto Layout configuration."
+  );
 }
 
 async function handleSetLayoutSizing(params: Record<string, unknown>): Promise<{ success: boolean }> {
