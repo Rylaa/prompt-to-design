@@ -384,19 +384,123 @@ function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>
 // ============================================================================
 
 async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nodeId: string; fill?: string; name?: string }> {
-  const frame = figma.createFrame();
-  applyCommonFrameProps(frame, params);
-
-  // Parent'a ekle
-  let parentNode: FrameNode | ComponentNode | null = null;
+  // Parent'ı bul
+  let parent: FrameNode | ComponentNode | undefined;
   if (params.parentId) {
-    const parent = await getNode(params.parentId as string);
-    if (parent && "appendChild" in parent) {
-      parentNode = parent as FrameNode | ComponentNode;
-      parentNode.appendChild(frame);
+    const parentNode = await getNode(params.parentId as string);
+    if (parentNode && "appendChild" in parentNode) {
+      parent = parentNode as FrameNode | ComponentNode;
     }
-  } else {
-    figma.currentPage.appendChild(frame);
+  }
+
+  // Auto Layout config oluştur
+  const config: CoreAutoLayoutConfig = {
+    name: (params.name as string) || "Frame",
+    direction: (params.autoLayout as { mode?: string })?.mode === "HORIZONTAL" ? "HORIZONTAL" : "VERTICAL",
+    spacing: {
+      gap: "4" as const, // Default 16px
+      padding: "4" as const, // Default 16px
+    },
+    parent,
+  };
+
+  // Auto Layout params varsa override et
+  if (params.autoLayout) {
+    const al = params.autoLayout as Record<string, unknown>;
+
+    // Spacing - raw number'ı en yakın token'a çevir
+    if (typeof al.spacing === "number") {
+      config.spacing.gap = pxToSpacingKey(al.spacing as number);
+    }
+    if (typeof al.padding === "number") {
+      const paddingKey = pxToSpacingKey(al.padding as number);
+      config.spacing.padding = paddingKey;
+    }
+    if (typeof al.paddingTop === "number") {
+      config.spacing.paddingTop = pxToSpacingKey(al.paddingTop as number);
+    }
+    if (typeof al.paddingRight === "number") {
+      config.spacing.paddingRight = pxToSpacingKey(al.paddingRight as number);
+    }
+    if (typeof al.paddingBottom === "number") {
+      config.spacing.paddingBottom = pxToSpacingKey(al.paddingBottom as number);
+    }
+    if (typeof al.paddingLeft === "number") {
+      config.spacing.paddingLeft = pxToSpacingKey(al.paddingLeft as number);
+    }
+
+    // Alignment
+    if (al.primaryAxisAlign) {
+      config.primaryAxisAlign = al.primaryAxisAlign as "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
+    }
+    if (al.counterAxisAlign) {
+      config.counterAxisAlign = al.counterAxisAlign as "MIN" | "CENTER" | "MAX" | "BASELINE";
+    }
+  }
+
+  // Fill - hex'i RGB'ye çevir
+  if (params.fill) {
+    const fillParam = params.fill as { type?: string; color?: string | { r: number; g: number; b: number } };
+    if (fillParam.type === "SOLID" && fillParam.color) {
+      if (typeof fillParam.color === "string") {
+        const rgb = hexToRgb(fillParam.color);
+        config.fill = { type: "SOLID", color: rgb };
+      } else {
+        config.fill = { type: "SOLID", color: fillParam.color };
+      }
+    }
+  } else if (!params.parentId) {
+    // Root frame (parentId olmayan) icin varsayilan dark theme background
+    // #09090B = rgb(9, 9, 11) - beyaz text gorunsun diye
+    config.fill = { type: "SOLID", color: { r: 9 / 255, g: 9 / 255, b: 11 / 255 } };
+  }
+  // Child frame'ler icin fill belirtilmezse transparent (createAutoLayout varsayilani)
+
+  // Corner radius
+  if (typeof params.cornerRadius === "number") {
+    // Raw number'ı en yakın radius token'a çevir
+    const radiusMap: Record<number, RadiusKey> = {
+      0: "none", 2: "sm", 4: "default", 6: "md",
+      8: "lg", 12: "xl", 16: "2xl", 24: "3xl"
+    };
+    const closest = Object.entries(radiusMap)
+      .reduce((prev, [px, key]) =>
+        Math.abs(Number(px) - (params.cornerRadius as number)) < Math.abs(Number(prev[0]) - (params.cornerRadius as number))
+          ? [px, key] : prev
+      );
+    config.cornerRadius = closest[1] as RadiusKey;
+  }
+
+  // Explicit dimensions
+  if (params.width) {
+    config.width = params.width as number;
+    config.primaryAxisSizing = "FIXED";
+  }
+  if (params.height) {
+    config.height = params.height as number;
+    config.counterAxisSizing = "FIXED";
+  }
+
+  // Frame oluştur (factory kullanarak)
+  const frame = createAutoLayout(config);
+
+  // x, y PARAMETRELERİ ARTIK GÖRMEZDEN GELİNİYOR
+  // Auto Layout parent pozisyonu otomatik belirler
+  // Eski kod: if (params.x !== undefined) frame.x = params.x; // KALDIRILDI
+
+  // Stroke uygula (henüz factory'de desteklenmiyor)
+  if (params.stroke) {
+    applyStroke(frame, params.stroke as StrokeConfig);
+  }
+
+  // Effects uygula (henüz factory'de desteklenmiyor)
+  if (params.effects) {
+    frame.effects = (params.effects as EffectConfig[]).map(createEffect);
+  }
+
+  // Clips content
+  if (params.clipsContent !== undefined) {
+    frame.clipsContent = params.clipsContent as boolean;
   }
 
   registerNode(frame);
