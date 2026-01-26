@@ -810,65 +810,63 @@ async function handleCreateInput(params: Record<string, unknown>): Promise<{ nod
 }
 
 async function handleCreateCard(params: Record<string, unknown>): Promise<{ nodeId: string }> {
-  const card = figma.createFrame();
-  card.name = (params.name as string) || "Card";
+  // Auto Layout config
+  const config: CoreAutoLayoutConfig = {
+    name: (params.name as string) || "Card",
+    direction: "VERTICAL",
+    spacing: {
+      padding: "6" as const, // 24px default
+    },
+    fill: {
+      type: "SOLID",
+      color: { r: 1, g: 1, b: 1 }, // White background
+    },
+    cornerRadius: "lg",
+  };
 
-  const width = (params.width as number) || 320;
-  const height = (params.height as number);
-
-  if (height) {
-    card.resize(width, height);
-  } else {
-    card.resize(width, 200);
-    card.primaryAxisSizingMode = "AUTO";
-  }
-
-  const padding = (params.padding as number) !== undefined ? (params.padding as number) : 24;
-  card.layoutMode = "VERTICAL";
-  card.paddingTop = padding;
-  card.paddingRight = padding;
-  card.paddingBottom = padding;
-  card.paddingLeft = padding;
-  card.itemSpacing = (params.spacing as number) !== undefined ? (params.spacing as number) : 16;
-
-  card.cornerRadius = (params.cornerRadius as number) !== undefined ? (params.cornerRadius as number) : 12;
-
-  if (params.fill) {
-    card.fills = [createFill(params.fill as FillConfig)];
-  } else {
-    card.fills = [createSolidPaint("#18181B")];
-  }
-
-  if (params.stroke) {
-    applyStroke(card, params.stroke as StrokeConfig);
-  } else {
-    card.strokes = [createSolidPaint("#27272A")];
-    card.strokeWeight = 1;
-  }
-
-  if (params.shadow !== false) {
-    card.effects = [
-      {
-        type: "DROP_SHADOW",
-        color: { r: 0, g: 0, b: 0, a: 0.25 },
-        offset: { x: 0, y: 4 },
-        radius: 16,
-        spread: 0,
-        visible: true,
-        blendMode: "NORMAL",
-      },
-    ];
-  }
-
-  // Parent'a ekle
+  // Parent
   if (params.parentId) {
-    const parent = await getNode(params.parentId as string);
-    if (parent && "appendChild" in parent) {
-      (parent as FrameNode).appendChild(card);
+    const parentNode = await getNode(params.parentId as string);
+    if (parentNode && "appendChild" in parentNode) {
+      config.parent = parentNode as FrameNode | ComponentNode;
     }
-  } else {
-    figma.currentPage.appendChild(card);
-    figma.viewport.scrollAndZoomIntoView([card]);
+  }
+
+  // Custom fill
+  if (params.fill) {
+    const fillParam = params.fill as { type?: string; color?: string | { r: number; g: number; b: number } };
+    if (fillParam.type === "SOLID" && fillParam.color) {
+      if (typeof fillParam.color === "string") {
+        config.fill = { type: "SOLID", color: hexToRgb(fillParam.color) };
+      } else {
+        config.fill = { type: "SOLID", color: fillParam.color };
+      }
+    }
+  }
+
+  // Dimensions - respect direction (VERTICAL)
+  if (params.width) {
+    config.width = params.width as number;
+    config.counterAxisSizing = "FIXED"; // VERTICAL: width = counter axis
+  }
+  if (params.height) {
+    config.height = params.height as number;
+    config.primaryAxisSizing = "FIXED"; // VERTICAL: height = primary axis
+  }
+
+  const card = createAutoLayout(config);
+
+  // Shadow efekti
+  if (params.shadow !== false) {
+    card.effects = [{
+      type: "DROP_SHADOW",
+      color: { r: 0, g: 0, b: 0, a: 0.1 },
+      offset: { x: 0, y: 4 },
+      radius: 8,
+      spread: 0,
+      visible: true,
+      blendMode: "NORMAL",
+    }];
   }
 
   registerNode(card);
