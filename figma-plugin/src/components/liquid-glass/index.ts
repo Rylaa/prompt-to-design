@@ -96,9 +96,10 @@ export function applyGlassMaterial(
     // Background blur
     {
       type: "BACKGROUND_BLUR",
+      blurType: "NORMAL",
       radius: blurRadius,
       visible: true,
-    },
+    } as const,
     // Drop shadow for depth
     {
       type: "DROP_SHADOW",

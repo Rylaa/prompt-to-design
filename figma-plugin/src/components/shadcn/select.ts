@@ -12,6 +12,8 @@ import {
 export interface SelectOption {
   label: string;
   value: string;
+  disabled?: boolean;
+  shortcut?: string;
 }
 
 export interface SelectOptions {
@@ -157,22 +159,30 @@ export async function createShadcnSelect(
   return select;
 }
 
+interface DropdownMenuItem {
+  label: string;
+  shortcut?: string;
+  disabled?: boolean;
+  separator?: boolean;
+}
+
 export async function createShadcnDropdownMenu(
   options: {
     triggerText?: string;
-    items?: { label: string; shortcut?: string; disabled?: boolean; separator?: boolean }[];
+    items?: DropdownMenuItem[];
     width?: number;
     theme?: Theme;
   } = {}
 ): Promise<FrameNode> {
+  const defaultItems: DropdownMenuItem[] = [
+    { label: "Profile", shortcut: "⇧⌘P" },
+    { label: "Settings", shortcut: "⌘," },
+    { label: "", separator: true },
+    { label: "Log out", shortcut: "⇧⌘Q" },
+  ];
   const {
     triggerText = "Open Menu",
-    items = [
-      { label: "Profile", shortcut: "⇧⌘P" },
-      { label: "Settings", shortcut: "⌘," },
-      { separator: true },
-      { label: "Log out", shortcut: "⇧⌘Q" },
-    ],
+    items = defaultItems,
     width = 200,
     theme = "light",
   } = options;
