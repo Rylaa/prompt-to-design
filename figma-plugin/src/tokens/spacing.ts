@@ -262,3 +262,21 @@ export function pxToSpacingKey(px: number): SpacingKey {
 
   return closest;
 }
+
+/**
+ * Converts raw pixel value to nearest RadiusKey
+ */
+export function pxToRadiusKey(px: number): RadiusKey {
+  const keys = Object.keys(radius) as RadiusKey[];
+  let closest: RadiusKey = "none";
+  let minDiff = Infinity;
+
+  for (const key of keys) {
+    const diff = Math.abs(radius[key] - px);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = key;
+    }
+  }
+  return closest;
+}

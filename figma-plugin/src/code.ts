@@ -30,7 +30,7 @@ import type {
 } from "./core/types";
 
 // Spacing tokens
-import { pxToSpacingKey } from "./tokens/spacing";
+import { pxToSpacingKey, pxToRadiusKey } from "./tokens/spacing";
 import type { RadiusKey } from "./tokens/spacing";
 
 // UI'ı göster
@@ -458,27 +458,26 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
 
   // Corner radius
   if (typeof params.cornerRadius === "number") {
-    // Raw number'ı en yakın radius token'a çevir
-    const radiusMap: Record<number, RadiusKey> = {
-      0: "none", 2: "sm", 4: "default", 6: "md",
-      8: "lg", 12: "xl", 16: "2xl", 24: "3xl"
-    };
-    const closest = Object.entries(radiusMap)
-      .reduce((prev, [px, key]) =>
-        Math.abs(Number(px) - (params.cornerRadius as number)) < Math.abs(Number(prev[0]) - (params.cornerRadius as number))
-          ? [px, key] : prev
-      );
-    config.cornerRadius = closest[1] as RadiusKey;
+    config.cornerRadius = pxToRadiusKey(params.cornerRadius);
   }
 
-  // Explicit dimensions
+  // Explicit dimensions - respect direction
+  const direction = config.direction;
   if (params.width) {
     config.width = params.width as number;
-    config.primaryAxisSizing = "FIXED";
+    if (direction === "HORIZONTAL") {
+      config.primaryAxisSizing = "FIXED";
+    } else {
+      config.counterAxisSizing = "FIXED";
+    }
   }
   if (params.height) {
     config.height = params.height as number;
-    config.counterAxisSizing = "FIXED";
+    if (direction === "VERTICAL") {
+      config.primaryAxisSizing = "FIXED";
+    } else {
+      config.counterAxisSizing = "FIXED";
+    }
   }
 
   // Frame oluştur (factory kullanarak)
