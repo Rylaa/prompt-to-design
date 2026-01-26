@@ -149,6 +149,17 @@ interface ComponentDefinition {
 
 const componentLibrary: Map<string, ComponentNode> = new Map();
 
+// ============================================================================
+// Component Slots - Reusable component slots with variant support
+// ============================================================================
+
+interface ComponentSlot {
+  nodeId: string;
+  variants?: Record<string, string>;
+}
+
+const componentSlots = new Map<string, ComponentSlot>();
+
 async function getNode(nodeId: string): Promise<SceneNode | null> {
   // Önce registry'den bak
   if (nodeRegistry.has(nodeId)) {
@@ -1184,6 +1195,162 @@ async function handleRegisterComponent(params: Record<string, unknown>): Promise
 
   componentLibrary.set(libraryKey, node as ComponentNode);
   return { success: true };
+}
+
+// ============================================================================
+// Component Slots - Register and instantiate reusable component slots
+// ============================================================================
+
+async function handleRegisterComponentSlot(params: Record<string, unknown>): Promise<{ success: boolean; slotKey: string; nodeId: string }> {
+  const nodeId = params.nodeId as string;
+  const slotKey = params.slotKey as string;
+  const variants = params.variants as Record<string, string> | undefined;
+
+  // Validate required params
+  if (!nodeId) {
+    throw new Error("nodeId is required");
+  }
+  if (!slotKey) {
+    throw new Error("slotKey is required");
+  }
+
+  const node = await getNode(nodeId);
+
+  if (!node) {
+    throw new Error(`Node not found: ${nodeId}`);
+  }
+
+  // Verify node is a ComponentNode or ComponentSetNode
+  if (node.type !== "COMPONENT" && node.type !== "COMPONENT_SET") {
+    throw new Error(`Node ${nodeId} must be a COMPONENT or COMPONENT_SET, got ${node.type}`);
+  }
+
+  // Store in componentSlots Map
+  componentSlots.set(slotKey, {
+    nodeId,
+    variants,
+  });
+
+  return { success: true, slotKey, nodeId };
+}
+
+async function handleCreateFromSlot(params: Record<string, unknown>): Promise<{ nodeId: string; name: string }> {
+  const slotKey = params.slotKey as string;
+  const variant = params.variant as string | undefined;
+  const parentId = params.parentId as string | undefined;
+  const overrides = params.overrides as Record<string, unknown> | undefined;
+
+  // Validate required params
+  if (!slotKey) {
+    throw new Error("slotKey is required");
+  }
+
+  // Look up slot in componentSlots Map
+  const slot = componentSlots.get(slotKey);
+  if (!slot) {
+    throw new Error(`Slot not found: ${slotKey}. Available slots: ${Array.from(componentSlots.keys()).join(", ") || "none"}`);
+  }
+
+  // Determine which nodeId to use
+  let targetNodeId = slot.nodeId;
+  if (variant && slot.variants && slot.variants[variant]) {
+    targetNodeId = slot.variants[variant];
+  }
+
+  // Get the component node
+  const node = await getNode(targetNodeId);
+  if (!node) {
+    throw new Error(`Component node not found: ${targetNodeId}`);
+  }
+
+  if (node.type !== "COMPONENT" && node.type !== "COMPONENT_SET") {
+    throw new Error(`Node ${targetNodeId} must be a COMPONENT or COMPONENT_SET, got ${node.type}`);
+  }
+
+  // Create instance
+  let instance: InstanceNode;
+  if (node.type === "COMPONENT") {
+    instance = (node as ComponentNode).createInstance();
+  } else {
+    // For ComponentSet, get the default variant
+    const componentSet = node as ComponentSetNode;
+    const defaultVariant = componentSet.defaultVariant;
+    if (!defaultVariant) {
+      throw new Error(`ComponentSet ${targetNodeId} has no default variant`);
+    }
+    instance = defaultVariant.createInstance();
+  }
+
+  // Append to parent if specified
+  if (parentId) {
+    const parent = await getNode(parentId);
+    if (parent && "appendChild" in parent) {
+      (parent as FrameNode).appendChild(instance);
+    }
+  } else {
+    figma.currentPage.appendChild(instance);
+  }
+
+  // Apply overrides if any
+  if (overrides) {
+    // Handle text overrides
+    if (overrides.text !== undefined && typeof overrides.text === "string") {
+      const textNodes = instance.findAll(n => n.type === "TEXT") as TextNode[];
+      if (textNodes.length > 0) {
+        await figma.loadFontAsync(textNodes[0].fontName as FontName);
+        textNodes[0].characters = overrides.text;
+      }
+    }
+
+    // Handle position overrides
+    if (overrides.x !== undefined) {
+      instance.x = overrides.x as number;
+    }
+    if (overrides.y !== undefined) {
+      instance.y = overrides.y as number;
+    }
+
+    // Handle name override
+    if (overrides.name !== undefined) {
+      instance.name = overrides.name as string;
+    }
+
+    // Handle fill overrides
+    if (overrides.fills !== undefined && "fills" in instance) {
+      const fills = overrides.fills as FillConfig[];
+      const convertedFills = fills.map(fill => {
+        if (fill.type === "SOLID" && fill.color) {
+          return createSolidPaint(fill.color, fill.opacity);
+        }
+        return null;
+      }).filter(Boolean) as Paint[];
+      if (convertedFills.length > 0) {
+        instance.fills = convertedFills;
+      }
+    }
+  }
+
+  registerNode(instance);
+  return { nodeId: instance.id, name: instance.name };
+}
+
+function handleListComponentSlots(params: Record<string, unknown>): { slots: Array<{ slotKey: string; nodeId: string; variants?: Record<string, string> }> } {
+  const filter = params.filter as string | undefined;
+
+  // Convert Map to array of entries
+  const allSlots = Array.from(componentSlots.entries()).map(([slotKey, slot]) => ({
+    slotKey,
+    nodeId: slot.nodeId,
+    variants: slot.variants,
+  }));
+
+  // Filter by slotKey prefix if filter provided
+  if (filter) {
+    const filteredSlots = allSlots.filter(slot => slot.slotKey.startsWith(filter));
+    return { slots: filteredSlots };
+  }
+
+  return { slots: allSlots };
 }
 
 // ============================================================================
@@ -5006,6 +5173,14 @@ async function handleCommand(command: Command): Promise<Record<string, unknown>>
     // Layout Linting
     case "LINT_LAYOUT":
       return handleLintLayout(params);
+
+    // Component Slots - Register and instantiate reusable component slots
+    case "REGISTER_COMPONENT_SLOT":
+      return handleRegisterComponentSlot(params);
+    case "CREATE_FROM_SLOT":
+      return handleCreateFromSlot(params);
+    case "LIST_COMPONENT_SLOTS":
+      return handleListComponentSlots(params);
 
     default:
       throw new Error(`Unknown action: ${action}`);
