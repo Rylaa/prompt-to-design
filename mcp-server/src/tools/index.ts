@@ -32,6 +32,7 @@ import { registerPageTools } from "./pages.js";
 import { registerThemeTools } from "./theme.js";
 import { registerConnectionTools } from "./connection.js";
 import { registerSessionTools } from "./session.js";
+import { registerLinterTools } from "./linter.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -54,6 +55,7 @@ export function registerAllTools(server: McpServer): void {
   // Node operations
   registerManipulationTools(server);
   registerQueryTools(server);
+  registerLinterTools(server);
   registerMaskTools(server);
   registerBooleanTools(server);
 
