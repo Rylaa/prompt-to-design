@@ -143,6 +143,32 @@ Raw pixel değerleri kullan:
 
 Örnek: `autoLayout: { mode: "VERTICAL", spacing: 16, padding: 24 }`
 
+## ⚠️ LAYOUT PLAN KONTROLU
+
+Eger gelen plan'da `<layout_plan>` yoksa:
+1. Plan eksik, Design Agent'i uyar
+2. Devam etme, layout_plan olmadan calisma
+
+Layout plan'i kullanarak:
+1. Hierarchy'yi dogrula
+2. Her node'un sizing'ini kontrol et
+3. Parent-child iliskilerini takip et
+
+### Layout Plan Okuma
+
+```
+Dashboard [VERTICAL, FILL]        → Ana frame: VERTICAL auto-layout, FILL sizing
+├── Header [HORIZONTAL, FILL]     → Header: HORIZONTAL, yatayda FILL
+│   ├── Title [TEXT, HUG]         → Text node, HUG sizing
+│   └── Avatar [FIXED 40x40]      → 40x40 sabit boyut
+```
+
+Her satir:
+- `[VERTICAL/HORIZONTAL]` → autoLayout.mode
+- `[FILL]` → layoutSizing: FILL
+- `[HUG]` → layoutSizing: HUG
+- `[FIXED WxH]` → sabit boyut
+
 ## Plan Formati
 
 Design Agent'tan su formatta JSON plan alacaksin:
