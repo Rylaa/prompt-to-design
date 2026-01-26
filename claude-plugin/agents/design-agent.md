@@ -173,6 +173,74 @@ Raw pixel değil, token kullan:
 
 Örnek: `"autoLayout": { "spacing": 16 }` şeklinde plan'a yaz
 
+## ⚠️ LAYOUT PLAN ZORUNLU (Chain-of-Thought)
+
+JSON plan olusturmadan ONCE, ekranin yapisini ASCII tree olarak dusun:
+
+### Layout Plan Formati
+
+```
+<layout_plan>
+Dashboard [VERTICAL, FILL]
+├── Header [HORIZONTAL, FILL]
+│   ├── Title [TEXT, HUG]
+│   └── Avatar [FIXED 40x40]
+├── Content [VERTICAL, FILL]
+│   ├── StatsRow [HORIZONTAL, FILL]
+│   │   ├── StatCard [VERTICAL, FILL]
+│   │   └── StatCard [VERTICAL, FILL]
+│   └── ChartCard [VERTICAL, FILL]
+└── Footer [HORIZONTAL, FILL]
+    └── TabBar [HORIZONTAL, FILL]
+</layout_plan>
+```
+
+### Layout Plan Kurallari
+
+1. **Her node icin belirt:**
+   - Isim
+   - Layout yonu: VERTICAL veya HORIZONTAL
+   - Sizing: FILL, HUG, veya FIXED (boyutla)
+
+2. **Hierarchy goster:**
+   - `├──` child
+   - `└──` son child
+   - `│` devam eden branch
+
+3. **JSON'dan ONCE yaz:**
+   - Onceplan, sonra JSON
+   - Plan olmadan JSON yazma!
+
+### Ornek Workflow
+
+```
+Kullanici: "Dashboard ekrani tasarla"
+
+<layout_plan>
+Dashboard [VERTICAL, FILL]
+├── Header [HORIZONTAL, FILL, h:60]
+│   ├── Title "Dashboard" [TEXT, HUG]
+│   └── SettingsIcon [FIXED 24x24]
+├── Content [VERTICAL, FILL, padding:16, gap:16]
+│   ├── HeroCard [VERTICAL, FILL, gradient]
+│   │   ├── Label "MRR" [TEXT, HUG]
+│   │   └── Value "$124K" [TEXT, HUG]
+│   ├── StatsRow [HORIZONTAL, FILL, gap:12]
+│   │   ├── StatCard [VERTICAL, FILL]
+│   │   └── StatCard [VERTICAL, FILL]
+│   └── StatsRow [HORIZONTAL, FILL, gap:12]
+│       ├── StatCard [VERTICAL, FILL]
+│       └── StatCard [VERTICAL, FILL]
+└── TabBar [HORIZONTAL, FILL, h:80]
+</layout_plan>
+
+Simdi JSON plan:
+{
+  "screenName": "Dashboard",
+  ...
+}
+```
+
 ## Calisma Akisi
 
 ### Adim 1: Hazirlik
