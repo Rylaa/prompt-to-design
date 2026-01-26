@@ -15,6 +15,24 @@ import { createLiquidGlassComponent, listLiquidGlassComponents } from "./compone
 import { listComponents, ComponentLibrary } from "./components";
 import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "./icons/lucide-svgs";
 
+// Core layout system
+import {
+  createAutoLayout,
+  setLayoutSizing,
+  enableAutoLayout,
+  resolveSpacing,
+} from "./core";
+import type {
+  AutoLayoutConfig as CoreAutoLayoutConfig,
+  LayoutSizingConfig,
+  FillConfig as CoreFillConfig,
+  SpacingConfig,
+} from "./core/types";
+
+// Spacing tokens
+import { pxToSpacingKey } from "./tokens/spacing";
+import type { RadiusKey } from "./tokens/spacing";
+
 // UI'ı göster
 figma.showUI(__html__, { width: 300, height: 400 });
 
