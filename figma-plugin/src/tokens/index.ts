@@ -62,7 +62,7 @@ export type Theme = "light" | "dark" | "custom";
 export type Platform = "shadcn" | "ios" | "macos";
 
 // Current theme state
-let currentTheme: Theme = "light";
+let currentTheme: Theme = "dark";
 let currentPlatform: Platform = "shadcn";
 let customThemeColors: Partial<ThemeColors> = {};
 
@@ -327,9 +327,10 @@ export function createGlassBlurEffect(theme?: Theme): Effect {
   const effects = getLiquidGlassEffects(theme);
   return {
     type: "BACKGROUND_BLUR",
+    blurType: "NORMAL",
     radius: effects.backgroundBlur,
     visible: true,
-  };
+  } as Effect;
 }
 
 // Create Liquid Glass shadow effect

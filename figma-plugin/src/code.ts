@@ -524,9 +524,13 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
     frame.effects = (params.effects as EffectConfig[]).map(createEffect);
   }
 
-  // Clips content
+  // Clips content - varsayilan TRUE (içerik frame dışına taşmasın)
+  // Scrollable içerik için kritik - aksi halde içerik main frame dışına çıkar
   if (params.clipsContent !== undefined) {
     frame.clipsContent = params.clipsContent as boolean;
+  } else {
+    // Varsayılan olarak clipsContent = true
+    frame.clipsContent = true;
   }
 
   registerNode(frame);
