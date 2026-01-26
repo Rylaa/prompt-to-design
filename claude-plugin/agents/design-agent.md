@@ -306,6 +306,17 @@ Session ID: ${sessionId}
 
 **ASLA BEKLEME**: Plan hazir oldugunda kullaniciya sormadan HEMEN execution-agent'i cagir!
 
+### Adim 4: Lint Kontrolu (Opsiyonel)
+
+Execution Agent tamamladiktan sonra, lint kontrolu yapilabilir:
+
+```typescript
+figma_lint_layout({
+  nodeId: screenNodeId,
+  rules: ["AUTO_LAYOUT_REQUIRED", "VALID_SIZING_MODE"]
+})
+```
+
 ---
 
 ## PLAN FORMATI REFERANS
@@ -370,6 +381,17 @@ Session ID: ${sessionId}
       "type": "shadcn",
       "component": "card",
       "props": { "theme": "dark", "title": "Card Title" },
+      "sizing": { "horizontal": "FILL" }
+    },
+    {
+      "type": "kpi-card",
+      "props": {
+        "title": "Total Revenue",
+        "value": "$45,231.89",
+        "change": "+20.1% from last month",
+        "changeType": "positive",
+        "icon": "dollar-sign"
+      },
       "sizing": { "horizontal": "FILL" }
     }
   ]
@@ -499,6 +521,29 @@ const trend = figma_create_text({
   fill: { type: "SOLID", color: "#22C55E" }  // yesil = pozitif
 })
 ```
+
+### Pattern 1b: KPI Card (Blueprint Component)
+Pre-built KPI card - en hizli yol! Otomatik styling, icon, trend gosterir.
+
+```typescript
+// KPI Card - Tek komutla hazir!
+const kpiCard = figma_create_kpi_card({
+  title: "Total Revenue",
+  value: "$45,231.89",
+  change: "+20.1% from last month",
+  changeType: "positive",  // positive=yesil, negative=kirmizi, neutral=gri
+  icon: "dollar-sign",     // Lucide icon (opsiyonel)
+  theme: "dark",
+  parentId: rowFrame.nodeId
+})
+figma_set_layout_sizing({ nodeId: kpiCard.nodeId, horizontal: "FILL" })
+```
+
+**KPI Card ozellikleri:**
+- Otomatik dark/light theme styling
+- Icon desteği (Lucide icons)
+- Trend renklendirmesi (positive/negative/neutral)
+- 280px default genislik, FILL ile esnek
 
 ### Pattern 2: Hero Metric Card (Buyuk Metrik)
 Ana metrik icin kullan (MRR, Revenue, etc.)

@@ -69,7 +69,8 @@ export const EffectSchema = z.union([ShadowSchema, BlurSchema]);
 
 export const AutoLayoutSchema = z.object({
   mode: z.enum(["HORIZONTAL", "VERTICAL"]).describe("Layout direction"),
-  spacing: z.number().min(0).optional().default(0).describe("Gap between items"),
+  spacing: z.number().min(0).optional().default(0).describe("Gap between items on primary axis"),
+  counterAxisSpacing: z.number().min(0).optional().describe("Gap between rows/columns when wrap is enabled"),
   paddingTop: z.number().min(0).optional().default(0),
   paddingRight: z.number().min(0).optional().default(0),
   paddingBottom: z.number().min(0).optional().default(0),
@@ -78,6 +79,7 @@ export const AutoLayoutSchema = z.object({
   primaryAxisAlign: z.enum(["MIN", "CENTER", "MAX", "SPACE_BETWEEN"]).optional().default("MIN"),
   counterAxisAlign: z.enum(["MIN", "CENTER", "MAX", "BASELINE"]).optional().default("MIN"),
   wrap: z.boolean().optional().default(false),
+  strokesIncludedInLayout: z.boolean().optional().default(false).describe("Include stroke weight in layout calculations"),
 });
 
 export const ConstraintsSchema = z.object({

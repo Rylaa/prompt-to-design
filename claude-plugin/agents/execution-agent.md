@@ -22,6 +22,7 @@ tools:
   - mcp__prompt-to-design__figma_create_button
   - mcp__prompt-to-design__figma_create_input
   - mcp__prompt-to-design__figma_create_card
+  - mcp__prompt-to-design__figma_create_kpi_card
   - mcp__prompt-to-design__figma_create_shadcn_component
   - mcp__prompt-to-design__figma_create_apple_component
   - mcp__prompt-to-design__figma_create_liquid_glass_component
@@ -29,6 +30,7 @@ tools:
   - mcp__prompt-to-design__figma_set_autolayout
   - mcp__prompt-to-design__figma_set_fill
   - mcp__prompt-to-design__figma_set_layout_sizing
+  - mcp__prompt-to-design__figma_lint_layout
   - mcp__prompt-to-design__figma_connection_status
 ---
 
@@ -142,6 +144,41 @@ Raw pixel değerleri kullan:
 - `spacing: 32` → 32px
 
 Örnek: `autoLayout: { mode: "VERTICAL", spacing: 16, padding: 24 }`
+
+### WRAP MOD VE ILERI DUZEYDEKI AUTO-LAYOUT OZELLIKLERI
+
+Auto-layout'un gelismis ozellikleri:
+
+```typescript
+autoLayout: {
+  mode: "HORIZONTAL",
+  spacing: 16,                    // Ana eksen bosluk (her zaman)
+  counterAxisSpacing: 12,         // Wrap modunda satirlar arasi bosluk
+  wrap: true,                     // Wrap modunu aktif et
+  strokesIncludedInLayout: true,  // Stroke kalınlığını layout hesabına dahil et
+  padding: 24
+}
+```
+
+| Ozellik | Aciklama | Kullanim |
+|---------|----------|----------|
+| `counterAxisSpacing` | Wrap modunda satirlar/kolonlar arasi bosluk | Grid layout, tag listesi |
+| `strokesIncludedInLayout` | Stroke kalinligi layout'a dahil | Border'li kartlar icin hassas pozisyonlama |
+| `wrap` | Tasma durumunda yeni satira gec | Tag cloud, chip listesi |
+
+**Ornek - Tag Listesi (Wrap):**
+```typescript
+figma_create_frame({
+  name: "Tags",
+  parentId: contentId,
+  autoLayout: {
+    mode: "HORIZONTAL",
+    spacing: 8,              // Tag'lar arasi yatay bosluk
+    counterAxisSpacing: 8,   // Satirlar arasi dikey bosluk
+    wrap: true
+  }
+})
+```
 
 ## ⚠️ LAYOUT PLAN KONTROLU
 
@@ -342,6 +379,7 @@ Her region'daki `components` array'ini isle. Component type'ina gore uygun tool'
 | button | figma_create_button | `{ text, variant }` |
 | input | figma_create_input | `{ placeholder, label }` |
 | card | figma_create_card | `{ shadow, padding }` |
+| kpi_card | figma_create_kpi_card | `{ title, value, change, changeType, icon }` |
 | shadcn | figma_create_shadcn_component | `{ component, theme, variant }` |
 | icon | figma_create_icon | `{ name, size, color }` |
 

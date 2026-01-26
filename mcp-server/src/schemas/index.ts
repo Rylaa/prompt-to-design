@@ -370,6 +370,23 @@ export const GetDesignTokensInputSchema = z.object({
 }).strict();
 
 // ============================================================================
+// Dashboard Blueprint Components
+// ============================================================================
+
+export const KPICardInputSchema = z.object({
+  title: z.string().describe("Card title (e.g., 'Total Revenue')"),
+  value: z.string().describe("Main value to display (e.g., '$45,231.89')"),
+  change: z.string().optional().describe("Change indicator (e.g., '+20.1% from last month')"),
+  changeType: z.enum(["positive", "negative", "neutral"]).optional().default("neutral").describe("Type of change for styling"),
+  icon: z.string().optional().describe("Lucide icon name (e.g., 'dollar-sign')"),
+  width: z.number().min(1).optional().default(280).describe("Card width in pixels"),
+  theme: ThemeSchema.optional().describe("Light or dark theme"),
+  parentId: z.string().optional().describe("Parent frame to add card to"),
+}).strict();
+
+export type KPICardInput = z.infer<typeof KPICardInputSchema>;
+
+// ============================================================================
 // Component Registry Schemas (Slot Pattern)
 // ============================================================================
 

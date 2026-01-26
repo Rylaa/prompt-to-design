@@ -101,6 +101,7 @@ type CodeBlockLanguage = "TYPESCRIPT" | "JAVASCRIPT" | "PYTHON" | "RUBY" | "CSS"
 interface AutoLayoutConfig {
   mode: "HORIZONTAL" | "VERTICAL";
   spacing?: number;
+  counterAxisSpacing?: number;
   paddingTop?: number;
   paddingRight?: number;
   paddingBottom?: number;
@@ -109,6 +110,7 @@ interface AutoLayoutConfig {
   primaryAxisAlign?: "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
   counterAxisAlign?: "MIN" | "CENTER" | "MAX" | "BASELINE";
   wrap?: boolean;
+  strokesIncludedInLayout?: boolean;
 }
 
 interface TextStyleConfig {
@@ -312,6 +314,15 @@ function applyAutoLayout(node: FrameNode, config: AutoLayoutConfig): void {
 
   if (config.wrap) {
     node.layoutWrap = "WRAP";
+    // counterAxisSpacing only applies when wrap is enabled
+    if (config.counterAxisSpacing !== undefined) {
+      node.counterAxisSpacing = config.counterAxisSpacing;
+    }
+  }
+
+  // strokesIncludedInLayout - controls if stroke weight is included in layout calculations
+  if (config.strokesIncludedInLayout !== undefined) {
+    node.strokesIncludedInLayout = config.strokesIncludedInLayout;
   }
 }
 
@@ -898,6 +909,106 @@ async function handleCreateCard(params: Record<string, unknown>): Promise<{ node
       visible: true,
       blendMode: "NORMAL",
     }];
+  }
+
+  registerNode(card);
+  return { nodeId: card.id };
+}
+
+async function handleCreateKPICard(params: Record<string, unknown>): Promise<{ nodeId: string }> {
+  const title = (params.title as string) || "Total Revenue";
+  const value = (params.value as string) || "$45,231.89";
+  const change = params.change as string | undefined;
+  const changeType = (params.changeType as "positive" | "negative" | "neutral") || "neutral";
+  const iconName = params.icon as string | undefined;
+  const width = (params.width as number) || 280;
+  const theme = (params.theme as "light" | "dark") || currentTheme;
+
+  // Theme colors
+  const isDark = theme === "dark";
+  const bgColor = isDark ? { r: 0.035, g: 0.035, b: 0.043 } : { r: 1, g: 1, b: 1 }; // #09090B / #FFFFFF
+  const textColor = isDark ? { r: 0.98, g: 0.98, b: 0.98 } : { r: 0.035, g: 0.035, b: 0.043 }; // #FAFAFA / #09090B
+  const mutedColor = isDark ? { r: 0.64, g: 0.64, b: 0.7 } : { r: 0.45, g: 0.45, b: 0.5 }; // #A1A1AA / #71717A
+  const borderColor = isDark ? { r: 0.16, g: 0.16, b: 0.18 } : { r: 0.89, g: 0.89, b: 0.91 }; // #27272A / #E4E4E7
+
+  // Change type colors
+  const changeColors = {
+    positive: { r: 0.13, g: 0.77, b: 0.37 }, // #22C55E
+    negative: { r: 0.94, g: 0.27, b: 0.27 }, // #EF4444
+    neutral: mutedColor,
+  };
+
+  // Main card container
+  const cardConfig: CoreAutoLayoutConfig = {
+    name: "KPI Card",
+    direction: "VERTICAL",
+    spacing: { item: "2", padding: "6" }, // 8px item, 24px padding
+    fill: { type: "SOLID", color: bgColor },
+    stroke: { color: borderColor, weight: 1 },
+    cornerRadius: "lg",
+    width: width,
+  };
+
+  // Parent
+  if (params.parentId) {
+    const parentNode = await getNode(params.parentId as string);
+    if (parentNode && "appendChild" in parentNode) {
+      cardConfig.parent = parentNode as FrameNode | ComponentNode;
+    }
+  }
+
+  const card = createAutoLayout(cardConfig);
+
+  // Header row (icon + title)
+  const headerConfig: CoreAutoLayoutConfig = {
+    name: "Header",
+    direction: "HORIZONTAL",
+    spacing: { item: "2" }, // 8px
+    align: { counter: "CENTER" },
+  };
+  const header = createAutoLayout(headerConfig);
+  card.appendChild(header);
+
+  // Icon (if provided)
+  if (iconName) {
+    try {
+      const iconResult = await handleCreateIcon({ name: iconName, size: 16, color: rgbToHex(mutedColor) });
+      const iconNode = await getNode(iconResult.nodeId);
+      if (iconNode) {
+        header.appendChild(iconNode as SceneNode);
+      }
+    } catch (e) {
+      // Icon not found, skip
+    }
+  }
+
+  // Title text
+  const titleText = await createTextNode({
+    content: title,
+    fontSize: 14,
+    fontWeight: 500,
+    fill: { type: "SOLID", color: mutedColor },
+  });
+  header.appendChild(titleText);
+
+  // Value text (large)
+  const valueText = await createTextNode({
+    content: value,
+    fontSize: 30,
+    fontWeight: 700,
+    fill: { type: "SOLID", color: textColor },
+  });
+  card.appendChild(valueText);
+
+  // Change indicator (if provided)
+  if (change) {
+    const changeText = await createTextNode({
+      content: change,
+      fontSize: 12,
+      fontWeight: 400,
+      fill: { type: "SOLID", color: changeColors[changeType] },
+    });
+    card.appendChild(changeText);
   }
 
   registerNode(card);
@@ -5260,6 +5371,8 @@ async function handleCommand(command: Command): Promise<Record<string, unknown>>
       return handleRegisterComponent(params);
     case "CREATE_UI_COMPONENT":
       return handleCreateUIComponent(params);
+    case "CREATE_KPI_CARD":
+      return handleCreateKPICard(params);
     case "GET_SELECTION":
       return handleGetSelection();
     case "APPEND_CHILD":

@@ -9,10 +9,12 @@ import {
   CreateInputInputSchema,
   CreateCardInputSchema,
   CreateUIComponentInputSchema,
+  KPICardInputSchema,
   type CreateButtonInput,
   type CreateInputInput,
   type CreateCardInput,
   type CreateUIComponentInput,
+  type KPICardInput,
 } from "../schemas/index.js";
 
 export function registerComponentTools(server: McpServer): void {
@@ -115,5 +117,29 @@ Returns: Component node ID and library key for reuse.`,
       annotations: DEFAULT_ANNOTATIONS,
     },
     createToolHandler<CreateUIComponentInput>("CREATE_UI_COMPONENT")
+  );
+
+  server.registerTool(
+    "figma_create_kpi_card",
+    {
+      title: "Create KPI Card",
+      description: `Create a dashboard KPI card for displaying metrics.
+
+A pre-styled card showing a key performance indicator with title, value, and optional change indicator.
+
+Args:
+  - title: Card title (e.g., 'Total Revenue')
+  - value: Main value to display (e.g., '$45,231.89')
+  - change: Optional change indicator (e.g., '+20.1% from last month')
+  - changeType: positive | negative | neutral (for color coding)
+  - icon: Optional Lucide icon name (e.g., 'dollar-sign')
+  - width: Card width (default: 280)
+  - theme: light | dark
+
+Returns: Node ID of created KPI card.`,
+      inputSchema: KPICardInputSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
+    createToolHandler<KPICardInput>("CREATE_KPI_CARD")
   );
 }
