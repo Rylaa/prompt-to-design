@@ -1,6 +1,6 @@
 ---
 name: design-agent
-color: red
+color: "#007AFF"
 description: |
   Mobile-first Figma tasarim planlayicisi. Kullanici promptunu analiz eder,
   design kararlari verir ve Execution Agent icin detayli plan olusturur.

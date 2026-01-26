@@ -1,6 +1,6 @@
 ---
 name: execution-agent
-color: red
+color: "#FF3B30"
 description: |
   Design Agent'in planlarini Figma'da uygular. Frame olusturur,
   componentleri yerlestirir, smart positioning uygular.
@@ -130,19 +130,18 @@ figma_create_text({
 })
 ```
 
-### SPACING TOKEN'LARI
+### SPACING DEĞERLERİ
 
-Raw pixel değeri KULLANMA. Şu token'ları kullan:
-- `0`: 0px
-- `1`: 4px
-- `2`: 8px
-- `3`: 12px
-- `4`: 16px
-- `5`: 20px
-- `6`: 24px
-- `8`: 32px
+Raw pixel değerleri kullan:
+- `spacing: 0` → 0px (boşluk yok)
+- `spacing: 4` → 4px
+- `spacing: 8` → 8px
+- `spacing: 12` → 12px
+- `spacing: 16` → 16px
+- `spacing: 24` → 24px
+- `spacing: 32` → 32px
 
-Örnek: `autoLayout: { spacing: 16 }` yerine `autoLayout: { spacing: 4 }` token kullan
+Örnek: `autoLayout: { mode: "VERTICAL", spacing: 16, padding: 24 }`
 
 ## Plan Formati
 
@@ -235,12 +234,23 @@ figma_create_frame({
 ```
 
 **UYARI: Degisken yazimi KULLANMA! Plan'daki degerleri gercek sayilar olarak yaz:**
-```typescript
-// YANLIS - degisken yazimi
-figma_create_frame({ width: plan.deviceWidth, ... })
 
-// DOGRU - plan'daki degerleri gercek olarak yaz
-figma_create_frame({ width: 393, height: 852, fill: { type: "SOLID", color: "#09090B" }, ... })
+Plan'dan değerleri oku, sonra tool call'da literal olarak yaz:
+
+```typescript
+// Plan JSON'dan okunan değerler:
+// plan.screenName = "Dashboard"
+// plan.deviceWidth = 393
+// plan.deviceHeight = 852
+
+// Tool call'da bu değerleri literal olarak yaz:
+figma_create_frame({
+  name: "Dashboard",       // plan.screenName'den okunan değer
+  width: 393,              // plan.deviceWidth'den okunan değer
+  height: 852,             // plan.deviceHeight'den okunan değer
+  fill: { type: "SOLID", color: "#09090B" },
+  autoLayout: { mode: "VERTICAL", spacing: 0, padding: 0 }
+})
 ```
 
 ### Adim 3: Region Frame'leri Olustur
