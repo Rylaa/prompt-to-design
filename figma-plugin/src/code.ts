@@ -14,8 +14,6 @@ import { createMacOSComponent, listMacOSComponents } from "./components/apple-ma
 import { createLiquidGlassComponent, listLiquidGlassComponents } from "./components/liquid-glass";
 import { listComponents, ComponentLibrary } from "./components";
 import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "./icons/lucide-svgs";
-import { calculatePosition, getLayoutContextFromNode } from "./positioning/index";
-import type { PositionRequest } from "./positioning/types";
 
 // UI'ı göster
 figma.showUI(__html__, { width: 300, height: 400 });
@@ -72,6 +70,15 @@ interface BlurConfig {
 }
 
 type EffectConfig = ShadowConfig | BlurConfig;
+
+// FigJam connector magnet positions
+type ConnectorMagnet = "AUTO" | "TOP" | "BOTTOM" | "LEFT" | "RIGHT" | "CENTER";
+
+// FigJam connector line types
+type ConnectorLineType = "STRAIGHT" | "ELBOWED" | "CURVED";
+
+// FigJam code block languages
+type CodeBlockLanguage = "TYPESCRIPT" | "JAVASCRIPT" | "PYTHON" | "RUBY" | "CSS" | "HTML" | "JSON" | "CPP" | "GO" | "BASH" | "SWIFT" | "KOTLIN" | "RUST" | "PLAINTEXT" | "GRAPHQL" | "SQL" | "DART";
 
 interface AutoLayoutConfig {
   mode: "HORIZONTAL" | "VERTICAL";
@@ -319,6 +326,10 @@ function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>
     // Root frame (parentId olmayan) icin varsayilan dark theme background
     // #09090B = rgb(9, 9, 11) - beyaz text gorunsun diye
     frame.fills = [{ type: "SOLID", color: { r: 9 / 255, g: 9 / 255, b: 11 / 255 } }];
+  } else {
+    // Child frame'ler icin transparent (parent'in arka planini goster)
+    // Figma varsayilan olarak beyaz fill verir, bu yuzden bos array ile transparent yapiyoruz
+    frame.fills = [];
   }
 
   if (params.cornerRadius !== undefined) {
@@ -350,61 +361,11 @@ function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>
   }
 }
 
-/**
- * Smart positioning uygular
- * Manuel x/y verilmişse onları kullanır, yoksa region-based pozisyon hesaplar
- */
-function applySmartPosition(
-  node: SceneNode,
-  parent: FrameNode | ComponentNode | null,
-  params: {
-    x?: number;
-    y?: number;
-    width: number;
-    height: number;
-    region?: "header" | "content" | "footer";
-    alignment?: "start" | "center" | "end" | "stretch";
-  }
-): void {
-  // Manuel pozisyon verilmişse onu kullan
-  if (params.x !== undefined && params.y !== undefined) {
-    if ("x" in node) node.x = params.x;
-    if ("y" in node) node.y = params.y;
-    return;
-  }
-
-  // Parent yoksa skip
-  if (!parent) return;
-
-  // Auto-layout parent için sizing ayarla, pozisyon atama
-  if (parent.layoutMode !== "NONE") {
-    if ("layoutSizingHorizontal" in node) {
-      node.layoutSizingHorizontal = params.alignment === "stretch" ? "FILL" : "FIXED";
-    }
-    return;
-  }
-
-  // Smart positioning uygula
-  const context = getLayoutContextFromNode(parent);
-  const request: PositionRequest = {
-    width: params.width,
-    height: params.height,
-    region: params.region,
-    alignment: params.alignment,
-  };
-
-  const result = calculatePosition(context, request);
-
-  if ("x" in node) node.x = result.x;
-  if ("y" in node) node.y = result.y;
-  if ("resize" in node) node.resize(result.width, result.height);
-}
-
 // ============================================================================
 // Komut İşleyiciler
 // ============================================================================
 
-async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nodeId: string }> {
+async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nodeId: string; fill?: string; name?: string }> {
   const frame = figma.createFrame();
   applyCommonFrameProps(frame, params);
 
@@ -418,24 +379,6 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
     }
   } else {
     figma.currentPage.appendChild(frame);
-  }
-
-  // Smart positioning uygula (region varsa)
-  const validRegions = ["header", "content", "footer"] as const;
-  type ValidRegion = typeof validRegions[number];
-  const region: ValidRegion | undefined = validRegions.includes(params.region as ValidRegion)
-    ? (params.region as ValidRegion)
-    : undefined;
-
-  if (parentNode && region) {
-    applySmartPosition(frame, parentNode, {
-      x: params.x as number | undefined,
-      y: params.y as number | undefined,
-      width: (params.width as number) || 400,
-      height: (params.height as number) || 300,
-      region,
-      alignment: (params.alignment as "start" | "center" | "end" | "stretch") || "stretch",
-    });
   }
 
   registerNode(frame);
@@ -455,7 +398,7 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
     fillInfo = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`.toUpperCase();
   }
 
-  return { nodeId: frame.id, fill: fillInfo, name: frame.name };
+  return { nodeId: frame.id, fill: fillInfo ?? undefined, name: frame.name };
 }
 
 async function handleCreateRectangle(params: Record<string, unknown>): Promise<{ nodeId: string }> {
@@ -2328,8 +2271,11 @@ async function handleSelectNodes(params: Record<string, unknown>): Promise<{ suc
 async function handleCreateIcon(params: Record<string, unknown>): Promise<{ nodeId: string; availableIcons?: string[] }> {
   const iconName = params.name as string;
 
+  console.log("[DEBUG] handleCreateIcon called with:", { iconName, color: params.color, size: params.size, parentId: params.parentId });
+
   // If no icon name provided, return available icons
   if (!iconName) {
+    console.log("[DEBUG] No icon name provided, returning available icons list");
     return {
       nodeId: "",
       availableIcons: getAvailableIcons(),
@@ -2339,31 +2285,104 @@ async function handleCreateIcon(params: Record<string, unknown>): Promise<{ node
   // Check if icon exists
   if (!hasIcon(iconName)) {
     const available = getAvailableIcons();
-    throw new Error(`Icon "${iconName}" not found. Available icons: ${available.slice(0, 20).join(", ")}...`);
+    const errorMsg = `Icon "${iconName}" not found. Available icons: ${available.slice(0, 20).join(", ")}...`;
+    console.error("[DEBUG] Icon not found:", iconName);
+    throw new Error(errorMsg);
   }
 
   const svgString = LUCIDE_ICONS[iconName];
+  console.log("[DEBUG] SVG string found for icon:", iconName, "length:", svgString?.length);
 
   // Create SVG node using Figma's createNodeFromSvg API
-  const icon = figma.createNodeFromSvg(svgString);
+  let icon: FrameNode;
+  try {
+    icon = figma.createNodeFromSvg(svgString);
+    console.log("[DEBUG] SVG node created successfully, id:", icon.id);
+  } catch (svgError) {
+    const errorMsg = `Failed to create SVG node for icon "${iconName}": ${svgError instanceof Error ? svgError.message : String(svgError)}`;
+    console.error("[DEBUG] createNodeFromSvg failed:", errorMsg);
+    throw new Error(errorMsg);
+  }
+
   icon.name = `icon-${iconName}`;
 
   // Apply size (default 24px)
   const size = (params.size as number) || 24;
-  icon.resize(size, size);
+  try {
+    icon.resize(size, size);
+    console.log("[DEBUG] Icon resized to:", size);
+  } catch (resizeError) {
+    console.error("[DEBUG] resize failed:", resizeError);
+    // Continue anyway, size error is not critical
+  }
 
   // Apply color to stroke paths
   const color = (params.color as string) || "#000000";
   const rgb = hexToRgb(color);
+  console.log("[DEBUG] Applying color:", color, "RGB:", rgb);
 
-  // Update stroke color for all vector children
-  for (const child of icon.children) {
-    if ("strokes" in child && (child as VectorNode).strokes) {
-      (child as VectorNode).strokes = [{
-        type: "SOLID",
-        color: rgb,
-      }];
+  // Recursive function to apply color to all nested children
+  const applyColorRecursive = (node: SceneNode, depth: number = 0): number => {
+    let count = 0;
+    const indent = "  ".repeat(depth);
+
+    // Apply stroke color if node has strokes
+    if ("strokes" in node) {
+      try {
+        const vectorNode = node as VectorNode;
+        if (vectorNode.strokes && vectorNode.strokes.length > 0) {
+          vectorNode.strokes = [{
+            type: "SOLID",
+            color: rgb,
+          }];
+          count++;
+          console.log(`[DEBUG] ${indent}Applied stroke to:`, node.type, node.name);
+        }
+      } catch (strokeErr) {
+        console.warn(`[DEBUG] ${indent}Failed to apply stroke to:`, node.type, strokeErr);
+      }
     }
+
+    // Some SVG elements might use fills instead of strokes
+    if ("fills" in node) {
+      try {
+        const fillNode = node as GeometryMixin & SceneNode;
+        const fills = fillNode.fills as readonly Paint[];
+        // Only update if fills exist and are not empty/none
+        if (fills && fills.length > 0 && fills[0].type === "SOLID") {
+          fillNode.fills = [{
+            type: "SOLID",
+            color: rgb,
+          }];
+          console.log(`[DEBUG] ${indent}Applied fill to:`, node.type, node.name);
+        }
+      } catch (fillErr) {
+        console.warn(`[DEBUG] ${indent}Failed to apply fill to:`, node.type, fillErr);
+      }
+    }
+
+    // Recursively process children if node has them
+    if ("children" in node) {
+      const containerNode = node as FrameNode | GroupNode;
+      console.log(`[DEBUG] ${indent}Processing ${containerNode.children.length} children of:`, node.type, node.name);
+      for (const child of containerNode.children) {
+        count += applyColorRecursive(child, depth + 1);
+      }
+    }
+
+    return count;
+  };
+
+  // Update stroke/fill color for all vector children (including nested)
+  try {
+    let totalApplied = 0;
+    for (const child of icon.children) {
+      totalApplied += applyColorRecursive(child, 0);
+    }
+    console.log("[DEBUG] Color applied to", totalApplied, "nodes (recursive)");
+  } catch (colorError) {
+    console.error("[DEBUG] Color application failed:", colorError instanceof Error ? colorError.message : String(colorError));
+    // Continue anyway - color is not critical
   }
 
   // Position
@@ -2372,15 +2391,26 @@ async function handleCreateIcon(params: Record<string, unknown>): Promise<{ node
 
   // Add to parent if specified
   if (params.parentId) {
-    const parent = await getNode(params.parentId as string);
-    if (parent && "appendChild" in parent) {
-      (parent as FrameNode).appendChild(icon);
+    try {
+      const parent = await getNode(params.parentId as string);
+      if (parent && "appendChild" in parent) {
+        (parent as FrameNode).appendChild(icon);
+        console.log("[DEBUG] Icon appended to parent:", params.parentId);
+      } else {
+        console.warn("[DEBUG] Parent not found or invalid:", params.parentId);
+      }
+    } catch (parentError) {
+      const errorMsg = `Failed to add icon to parent "${params.parentId}": ${parentError instanceof Error ? parentError.message : String(parentError)}`;
+      console.error("[DEBUG] appendChild failed:", errorMsg);
+      throw new Error(errorMsg);
     }
   } else {
     figma.currentPage.appendChild(icon);
+    console.log("[DEBUG] Icon appended to current page");
   }
 
   registerNode(icon);
+  console.log("[DEBUG] Icon created successfully:", { nodeId: icon.id, name: icon.name });
   return { nodeId: icon.id };
 }
 
@@ -2537,7 +2567,7 @@ async function handleCreateVector(params: Record<string, unknown>): Promise<{ no
   // Apply fill
   if (params.fill) {
     const fillConfig = params.fill as FillConfig;
-    vector.fills = [createPaintFromConfig(fillConfig)];
+    vector.fills = [createFill(fillConfig)];
   }
 
   // Apply stroke
@@ -2657,7 +2687,7 @@ async function handleCreatePaintStyle(params: Record<string, unknown>): Promise<
   style.name = name;
 
   if (paints && paints.length > 0) {
-    style.paints = paints.map(p => createPaintFromConfig(p));
+    style.paints = paints.map(p => createFill(p));
   }
 
   return { styleId: style.id };
@@ -3258,7 +3288,7 @@ async function handleGetLayoutGrid(params: Record<string, unknown>): Promise<{ g
     throw new Error(`Frame not found: ${nodeId}`);
   }
 
-  return { grids: (node as FrameNode).layoutGrids };
+  return { grids: [...(node as FrameNode).layoutGrids] };
 }
 
 // ============================================================================
@@ -3279,7 +3309,7 @@ async function handleCreatePolygon(params: Record<string, unknown>): Promise<{ n
   // Apply fill
   if (params.fill) {
     const fillConfig = params.fill as FillConfig;
-    polygon.fills = [createPaintFromConfig(fillConfig)];
+    polygon.fills = [createFill(fillConfig)];
   }
 
   // Apply stroke
@@ -3323,7 +3353,7 @@ async function handleCreateStar(params: Record<string, unknown>): Promise<{ node
   // Apply fill
   if (params.fill) {
     const fillConfig = params.fill as FillConfig;
-    star.fills = [createPaintFromConfig(fillConfig)];
+    star.fills = [createFill(fillConfig)];
   }
 
   // Apply stroke
@@ -3490,37 +3520,34 @@ async function handleSetReactions(params: Record<string, unknown>): Promise<{ su
     throw new Error("Node does not support reactions");
   }
 
-  const figmaReactions: Reaction[] = reactions.map(r => {
-    const reaction: Reaction = {
-      trigger: { type: r.trigger.type as Trigger["type"] },
+  const figmaReactions = reactions.map(r => {
+    const trigger: Record<string, unknown> = { type: r.trigger.type };
+    if (r.trigger.timeout !== undefined) trigger.timeout = r.trigger.timeout;
+    if (r.trigger.delay !== undefined) trigger.delay = r.trigger.delay;
+
+    const transition = r.action.transition ? {
+      type: r.action.transition.type,
+      direction: r.action.transition.direction || "LEFT",
+      duration: r.action.transition.duration || 300,
+      easing: { type: r.action.transition.easing || "EASE_OUT" },
+      matchLayers: false,
+    } : null;
+
+    return {
+      trigger,
       actions: [{
-        type: r.action.type as Action["type"],
+        type: r.action.type,
         destinationId: r.action.destinationId || null,
-        navigation: r.action.navigation as Navigation || "NAVIGATE",
-        transition: r.action.transition ? {
-          type: r.action.transition.type as Transition["type"],
-          direction: r.action.transition.direction as "LEFT" | "RIGHT" | "TOP" | "BOTTOM" || "LEFT",
-          duration: r.action.transition.duration || 300,
-          easing: { type: r.action.transition.easing as "LINEAR" | "EASE_IN" | "EASE_OUT" | "EASE_IN_AND_OUT" || "EASE_OUT" },
-        } : null,
+        navigation: r.action.navigation || "NAVIGATE",
+        transition,
         preserveScrollPosition: r.action.preserveScrollPosition || false,
-        overlayRelativePosition: r.action.overlayRelativePosition || null,
+        overlayRelativePosition: r.action.overlayRelativePosition ?? undefined,
         resetVideoPosition: false,
         resetScrollPosition: false,
         resetInteractiveComponents: false,
       }],
     };
-
-    // Add trigger-specific properties
-    if (r.trigger.timeout !== undefined) {
-      (reaction.trigger as { type: string; timeout?: number }).timeout = r.trigger.timeout;
-    }
-    if (r.trigger.delay !== undefined) {
-      (reaction.trigger as { type: string; delay?: number }).delay = r.trigger.delay;
-    }
-
-    return reaction;
-  });
+  }) as unknown as Reaction[];
 
   (node as SceneNode & ReactionMixin).reactions = figmaReactions;
   return { success: true };
@@ -3538,7 +3565,7 @@ async function handleGetReactions(params: Record<string, unknown>): Promise<{ re
     throw new Error("Node does not support reactions");
   }
 
-  return { reactions: (node as SceneNode & ReactionMixin).reactions };
+  return { reactions: [...(node as SceneNode & ReactionMixin).reactions] };
 }
 
 async function handleAddReaction(params: Record<string, unknown>): Promise<{ success: boolean }> {
@@ -3563,25 +3590,34 @@ async function handleAddReaction(params: Record<string, unknown>): Promise<{ suc
   const reactionNode = node as SceneNode & ReactionMixin;
   const existingReactions = [...reactionNode.reactions];
 
-  const newReaction: Reaction = {
-    trigger: { type: trigger.type as Trigger["type"] },
+  // Build trigger with proper typing
+  const triggerObj: Record<string, unknown> = { type: trigger.type };
+  if (trigger.timeout !== undefined) triggerObj.timeout = trigger.timeout;
+  if (trigger.delay !== undefined) triggerObj.delay = trigger.delay;
+
+  // Build transition if provided
+  const transitionObj = action.transition ? {
+    type: action.transition.type,
+    direction: action.transition.direction || "LEFT",
+    duration: action.transition.duration || 300,
+    easing: { type: action.transition.easing || "EASE_OUT" },
+    matchLayers: false,
+  } : null;
+
+  const newReaction = {
+    trigger: triggerObj,
     actions: [{
-      type: action.type as Action["type"],
+      type: action.type,
       destinationId: action.destinationId || null,
-      navigation: action.navigation as Navigation || "NAVIGATE",
-      transition: action.transition ? {
-        type: action.transition.type as Transition["type"],
-        direction: action.transition.direction as "LEFT" | "RIGHT" | "TOP" | "BOTTOM" || "LEFT",
-        duration: action.transition.duration || 300,
-        easing: { type: action.transition.easing as "LINEAR" | "EASE_IN" | "EASE_OUT" | "EASE_IN_AND_OUT" || "EASE_OUT" },
-      } : null,
+      navigation: action.navigation || "NAVIGATE",
+      transition: transitionObj,
       preserveScrollPosition: false,
-      overlayRelativePosition: null,
+      overlayRelativePosition: undefined,
       resetVideoPosition: false,
       resetScrollPosition: false,
       resetInteractiveComponents: false,
     }],
-  };
+  } as unknown as Reaction;
 
   existingReactions.push(newReaction);
   reactionNode.reactions = existingReactions;
@@ -3606,7 +3642,7 @@ async function handleRemoveReactions(params: Record<string, unknown>): Promise<{
 
   if (triggerType) {
     // Remove specific trigger type
-    reactionNode.reactions = reactionNode.reactions.filter(r => r.trigger.type !== triggerType);
+    reactionNode.reactions = reactionNode.reactions.filter(r => r.trigger?.type !== triggerType);
   } else {
     // Remove all reactions
     reactionNode.reactions = [];
@@ -3735,7 +3771,7 @@ async function handleSetSectionContentsHidden(params: Record<string, unknown>): 
     throw new Error(`Section not found: ${nodeId}`);
   }
 
-  (node as SectionNode).devStatus = hidden ? { type: "READY_FOR_DEV" } : undefined;
+  (node as SectionNode).devStatus = hidden ? { type: "READY_FOR_DEV" } : null;
 
   return { success: true };
 }
@@ -3951,22 +3987,30 @@ async function handleUpdateTable(params: Record<string, unknown>): Promise<{ suc
 
   if (params.insertRows) {
     const { index, count } = params.insertRows as { index: number; count: number };
-    table.insertRow(index, count);
+    for (let i = 0; i < count; i++) {
+      table.insertRow(index);
+    }
   }
 
   if (params.insertColumns) {
     const { index, count } = params.insertColumns as { index: number; count: number };
-    table.insertColumn(index, count);
+    for (let i = 0; i < count; i++) {
+      table.insertColumn(index);
+    }
   }
 
   if (params.removeRows) {
     const { index, count } = params.removeRows as { index: number; count: number };
-    table.removeRow(index, count);
+    for (let i = 0; i < count; i++) {
+      table.removeRow(index);
+    }
   }
 
   if (params.removeColumns) {
     const { index, count } = params.removeColumns as { index: number; count: number };
-    table.removeColumn(index, count);
+    for (let i = 0; i < count; i++) {
+      table.removeColumn(index);
+    }
   }
 
   return { success: true };
@@ -3987,11 +4031,13 @@ async function handleSetTableCell(params: Record<string, unknown>): Promise<{ su
   const cell = table.cellAt(row, column);
 
   if (cell && cell.type === "TABLE_CELL") {
-    // Load font before setting text
-    const textChild = cell.children.find(c => c.type === "TEXT") as TextNode | undefined;
-    if (textChild) {
-      await figma.loadFontAsync(textChild.fontName as FontName);
-      textChild.characters = text;
+    // TableCellNode doesn't have direct children access in TypeScript types
+    // Use type assertion to access the cell's text content
+    const cellNode = cell as unknown as { text: TextSublayerNode };
+    if (cellNode.text) {
+      const textNode = cellNode.text;
+      await figma.loadFontAsync(textNode.fontName as FontName);
+      textNode.characters = text;
     }
   }
 
@@ -4250,8 +4296,8 @@ async function handleCreateLinkPreview(params: Record<string, unknown>): Promise
     throw new Error("Link previews can only be created in FigJam files");
   }
 
-  const linkPreview = figma.createLinkPreview();
-  linkPreview.url = (params.url as string) || "";
+  const url = (params.url as string) || "https://example.com";
+  const linkPreview = await figma.createLinkPreviewAsync(url);
 
   if (params.x !== undefined) linkPreview.x = params.x as number;
   if (params.y !== undefined) linkPreview.y = params.y as number;
@@ -4403,6 +4449,11 @@ async function handleGetMode(): Promise<{ mode: string }> {
 
 async function handleCommand(command: Command): Promise<Record<string, unknown>> {
   const { action, params } = command;
+
+  // DEBUG: Gelen parametreleri logla
+  if (action === "CREATE_FRAME" || action === "CREATE_TEXT" || action === "CREATE_ICON") {
+    console.log(`[DEBUG] ${action} params:`, JSON.stringify(params, null, 2));
+  }
 
   switch (action) {
     case "CREATE_FRAME":
