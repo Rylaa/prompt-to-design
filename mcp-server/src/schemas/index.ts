@@ -377,7 +377,7 @@ export const RegisterComponentSlotInputSchema = z.object({
   nodeId: z.string().describe("Component or ComponentSet node ID"),
   slotKey: z.string().describe("Unique key for this component (e.g., 'Button/primary')"),
   variants: z.record(z.string(), z.string()).optional().describe("Variant name to node ID mapping"),
-});
+}).strict();
 
 export type RegisterComponentSlotInput = z.infer<typeof RegisterComponentSlotInputSchema>;
 
@@ -386,13 +386,13 @@ export const CreateFromSlotInputSchema = z.object({
   variant: z.string().optional().describe("Variant to use"),
   parentId: z.string().optional().describe("Parent frame to add instance to"),
   overrides: z.record(z.string(), z.unknown()).optional().describe("Property overrides (text, fills, etc.)"),
-});
+}).strict();
 
 export type CreateFromSlotInput = z.infer<typeof CreateFromSlotInputSchema>;
 
 export const ListComponentSlotsInputSchema = z.object({
   filter: z.string().optional().describe("Filter by slot key prefix"),
-});
+}).strict();
 
 export type ListComponentSlotsInput = z.infer<typeof ListComponentSlotsInputSchema>;
 
