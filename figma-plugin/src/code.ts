@@ -4855,6 +4855,131 @@ async function handleCommand(command: Command): Promise<Record<string, unknown>>
       return handleGetEditorType();
     case "GET_MODE":
       return handleGetMode();
+
+    // Layout Linting
+    case "LINT_LAYOUT": {
+      const { nodeId, rules, recursive } = params as {
+        nodeId: string;
+        rules: string[];
+        recursive: boolean;
+      };
+
+      const VALID_SPACING = [0, 4, 8, 12, 16, 24, 32];
+      const violations: Array<{
+        nodeId: string;
+        nodeName: string;
+        rule: string;
+        message: string;
+        severity: "error" | "warning";
+      }> = [];
+      let checkedNodes = 0;
+
+      function lintNode(node: SceneNode): void {
+        checkedNodes++;
+
+        // NO_ABSOLUTE_POSITION check
+        if (rules.includes("NO_ABSOLUTE_POSITION")) {
+          if ("x" in node && "y" in node) {
+            const parent = node.parent;
+            if (parent && "layoutMode" in parent && parent.layoutMode === "NONE") {
+              violations.push({
+                nodeId: node.id,
+                nodeName: node.name,
+                rule: "NO_ABSOLUTE_POSITION",
+                message: `Node uses absolute positioning (x: ${node.x}, y: ${node.y}) instead of Auto Layout`,
+                severity: "error",
+              });
+            }
+          }
+        }
+
+        // AUTO_LAYOUT_REQUIRED check
+        if (rules.includes("AUTO_LAYOUT_REQUIRED")) {
+          if (node.type === "FRAME" || node.type === "COMPONENT") {
+            const frameNode = node as FrameNode;
+            if (frameNode.layoutMode === "NONE" && frameNode.children.length > 0) {
+              violations.push({
+                nodeId: node.id,
+                nodeName: node.name,
+                rule: "AUTO_LAYOUT_REQUIRED",
+                message: `Frame has children but no Auto Layout enabled`,
+                severity: "error",
+              });
+            }
+          }
+        }
+
+        // VALID_SIZING_MODE check
+        if (rules.includes("VALID_SIZING_MODE")) {
+          if ("layoutSizingHorizontal" in node) {
+            const frameNode = node as FrameNode;
+            const validModes = ["FIXED", "HUG", "FILL"];
+            if (!validModes.includes(frameNode.layoutSizingHorizontal)) {
+              violations.push({
+                nodeId: node.id,
+                nodeName: node.name,
+                rule: "VALID_SIZING_MODE",
+                message: `Invalid horizontal sizing mode: ${frameNode.layoutSizingHorizontal}`,
+                severity: "warning",
+              });
+            }
+          }
+        }
+
+        // SPACING_TOKEN_ONLY check
+        if (rules.includes("SPACING_TOKEN_ONLY")) {
+          if ("itemSpacing" in node) {
+            const frameNode = node as FrameNode;
+            if (!VALID_SPACING.includes(frameNode.itemSpacing)) {
+              violations.push({
+                nodeId: node.id,
+                nodeName: node.name,
+                rule: "SPACING_TOKEN_ONLY",
+                message: `Item spacing ${frameNode.itemSpacing}px is not a valid token (use: ${VALID_SPACING.join(", ")})`,
+                severity: "warning",
+              });
+            }
+          }
+        }
+
+        // FILL_REQUIRED_ON_ROOT check (only for root node)
+        if (rules.includes("FILL_REQUIRED_ON_ROOT") && node.id === nodeId) {
+          if ("fills" in node) {
+            const fills = node.fills as readonly Paint[];
+            if (!fills || fills.length === 0) {
+              violations.push({
+                nodeId: node.id,
+                nodeName: node.name,
+                rule: "FILL_REQUIRED_ON_ROOT",
+                message: `Root frame has no fill - content may be invisible`,
+                severity: "error",
+              });
+            }
+          }
+        }
+
+        // Recursive check
+        if (recursive && "children" in node) {
+          for (const child of node.children) {
+            lintNode(child);
+          }
+        }
+      }
+
+      const rootNode = figma.getNodeById(nodeId);
+      if (!rootNode) {
+        throw new Error(`Node ${nodeId} not found`);
+      }
+
+      lintNode(rootNode as SceneNode);
+
+      return {
+        passed: violations.filter(v => v.severity === "error").length === 0,
+        violations,
+        checkedNodes,
+      };
+    }
+
     default:
       throw new Error(`Unknown action: ${action}`);
   }
