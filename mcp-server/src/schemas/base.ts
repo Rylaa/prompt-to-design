@@ -113,6 +113,21 @@ export const StrokeSchema = z.object({
 });
 
 // ============================================================================
+// Common Field Schemas
+// ============================================================================
+
+export const PositionSchema = z.object({
+  x: z.number().optional(),
+  y: z.number().optional(),
+});
+
+export const ParentSchema = z.object({
+  parentId: z.string().optional().describe("Parent frame to add element to"),
+});
+
+export const EmptyInputSchema = z.object({}).strict();
+
+// ============================================================================
 // Type exports
 // ============================================================================
 
@@ -129,3 +144,6 @@ export type AutoLayout = z.infer<typeof AutoLayoutSchema>;
 export type Constraints = z.infer<typeof ConstraintsSchema>;
 export type TextStyle = z.infer<typeof TextStyleSchema>;
 export type Stroke = z.infer<typeof StrokeSchema>;
+export type Position = z.infer<typeof PositionSchema>;
+export type Parent = z.infer<typeof ParentSchema>;
+export type EmptyInput = z.infer<typeof EmptyInputSchema>;

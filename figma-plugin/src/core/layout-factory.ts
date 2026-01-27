@@ -116,9 +116,11 @@ export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
   // Spacing
   applySpacing(frame, config.spacing);
 
-  // Fill
+  // Fill - belirtilmezse TRANSPARENT (Figma varsayılanı beyaz, bunu override ediyoruz)
   if (config.fill) {
     frame.fills = resolveFill(config.fill, config.theme);
+  } else {
+    frame.fills = []; // Transparent - child frame'ler için
   }
 
   // Corner radius

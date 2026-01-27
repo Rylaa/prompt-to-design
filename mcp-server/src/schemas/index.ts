@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import { StrokeSchema } from "./base.js";
 
 // ============================================================================
 // Color Schemas
@@ -112,14 +113,12 @@ export const CreateFrameInputSchema = z.object({
   y: z.number().optional(),
   parentId: z.string().optional().describe("Parent frame to add element to"),
   fill: FillSchema.optional(),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).default(1),
-    align: z.enum(["INSIDE", "OUTSIDE", "CENTER"]).optional().default("INSIDE"),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
   cornerRadius: z.number().min(0).optional(),
   autoLayout: AutoLayoutSchema.optional(),
   effects: z.array(EffectSchema).optional(),
+  layoutSizingHorizontal: z.enum(["FIXED", "HUG", "FILL"]).optional().describe("Horizontal sizing mode when inside Auto Layout parent"),
+  layoutSizingVertical: z.enum(["FIXED", "HUG", "FILL"]).optional().describe("Vertical sizing mode when inside Auto Layout parent"),
 }).strict();
 
 export const CreateRectangleInputSchema = z.object({
@@ -130,10 +129,7 @@ export const CreateRectangleInputSchema = z.object({
   y: z.number().optional(),
   parentId: z.string().optional().describe("Parent frame to add element to"),
   fill: FillSchema.optional(),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).default(1),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
   cornerRadius: z.number().min(0).optional(),
   effects: z.array(EffectSchema).optional(),
 }).strict();
@@ -507,10 +503,7 @@ export const CreateLineInputSchema = z.object({
   endX: z.number().describe("End X coordinate"),
   endY: z.number().describe("End Y coordinate"),
   parentId: z.string().optional().describe("Parent frame to add line to"),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).optional().default(1),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
 }).strict();
 
 export const CreateGroupInputSchema = z.object({
@@ -583,10 +576,7 @@ export const CreateVectorInputSchema = z.object({
   y: z.number().optional(),
   parentId: z.string().optional(),
   fill: FillSchema.optional(),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).optional().default(1),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
 }).strict();
 
 export const SetVectorPathsInputSchema = z.object({
@@ -843,10 +833,7 @@ export const CreatePolygonInputSchema = z.object({
   y: z.number().optional(),
   parentId: z.string().optional(),
   fill: FillSchema.optional(),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).optional().default(1),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
 }).strict();
 
 export const CreateStarInputSchema = z.object({
@@ -859,10 +846,7 @@ export const CreateStarInputSchema = z.object({
   y: z.number().optional(),
   parentId: z.string().optional(),
   fill: FillSchema.optional(),
-  stroke: z.object({
-    color: ColorSchema,
-    weight: z.number().min(0).optional().default(1),
-  }).optional(),
+  stroke: StrokeSchema.optional(),
 }).strict();
 
 // ============================================================================
