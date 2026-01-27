@@ -96,6 +96,21 @@ async function handleSetLayoutSizing(params: Record<string, unknown>): Promise<{
     throw new Error(`Node ${nodeId} does not support layout sizing`);
   }
 
+  // Validate parent has auto-layout for FILL sizing
+  if (horizontal === "FILL" || vertical === "FILL") {
+    const parent = node.parent;
+    if (!parent || parent.type === "PAGE") {
+      throw new Error(
+        `FILL sizing requires an auto-layout parent. Node "${node.name}" is attached directly to page.`
+      );
+    }
+    if ("layoutMode" in parent && (parent as FrameNode).layoutMode === "NONE") {
+      throw new Error(
+        `FILL sizing requires parent to have auto-layout enabled. Parent "${parent.name}" has layoutMode: NONE. Enable auto-layout on parent first.`
+      );
+    }
+  }
+
   const layoutNode = node as FrameNode;
 
   if (horizontal) {
