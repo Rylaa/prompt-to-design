@@ -177,6 +177,22 @@ export function setLayoutSizing(
 ): void {
   if (!("layoutSizingHorizontal" in node)) return;
 
+  // Validate parent has auto-layout for FILL sizing
+  if ((config.horizontal === "FILL" || config.vertical === "FILL") && node.parent) {
+    if (!("layoutMode" in node.parent)) {
+      console.warn(
+        `[layout-factory] Cannot set FILL sizing: parent "${node.parent.name}" does not support auto-layout`
+      );
+      return; // Silently skip instead of error - factory is internal
+    }
+    if ((node.parent as FrameNode).layoutMode === "NONE") {
+      console.warn(
+        `[layout-factory] Cannot set FILL sizing: parent "${node.parent.name}" has layoutMode: NONE`
+      );
+      return; // Silently skip instead of error - factory is internal
+    }
+  }
+
   const n = node as FrameNode;
 
   if (config.horizontal) {
