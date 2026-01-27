@@ -1,6 +1,6 @@
 /**
  * Session Management Tools
- * Design session state için MCP araçları
+ * MCP tools for design session state
  */
 
 import { z } from "zod";

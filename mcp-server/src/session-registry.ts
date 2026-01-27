@@ -1,5 +1,5 @@
 /**
- * Session Registry - Aktif MCP session'ları takip eder
+ * Session Registry - Tracks active MCP sessions
  */
 
 import { v4 as uuidv4 } from "uuid";
@@ -19,10 +19,10 @@ class SessionRegistry {
   }
 
   /**
-   * Yeni session kaydet
+   * Register new session
    */
   public registerSession(name: string, port: number): MCPSession {
-    const sessionId = uuidv4().substring(0, 8); // Kısa ID
+    const sessionId = uuidv4().substring(0, 8); // Short ID
     const session: MCPSession = {
       sessionId,
       name,
@@ -35,7 +35,7 @@ class SessionRegistry {
   }
 
   /**
-   * Session sil
+   * Delete session
    */
   public unregisterSession(sessionId: string): boolean {
     const deleted = this.sessions.delete(sessionId);
@@ -46,33 +46,33 @@ class SessionRegistry {
   }
 
   /**
-   * Tüm aktif session'ları getir
+   * Get all active sessions
    */
   public getAllSessions(): SessionInfo[] {
     return Array.from(this.sessions.values()).map((session) => ({
       sessionId: session.sessionId,
       name: session.name,
       startedAt: session.startedAt.toISOString(),
-      isConnected: false, // WebSocket server tarafından güncellenecek
+      isConnected: false, // Will be updated by WebSocket server
     }));
   }
 
   /**
-   * Session ID ile session bul
+   * Find session by ID
    */
   public getSession(sessionId: string): MCPSession | undefined {
     return this.sessions.get(sessionId);
   }
 
   /**
-   * Session var mı kontrol et
+   * Check if session exists
    */
   public hasSession(sessionId: string): boolean {
     return this.sessions.has(sessionId);
   }
 
   /**
-   * Tüm session'ları temizle (test için)
+   * Clear all sessions (for testing)
    */
   public clear(): void {
     this.sessions.clear();

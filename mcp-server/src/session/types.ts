@@ -1,6 +1,6 @@
 /**
  * Design Session Types
- * Ekranlar arası bağlamı koruyan state tipleri
+ * State types that maintain context across screens
  */
 
 export interface DevicePreset {

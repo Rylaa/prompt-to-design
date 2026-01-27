@@ -1,22 +1,22 @@
 ---
 name: screen-patterns
 description: |
-  Temel ekran sablonlari: Login, Signup, Profile, Settings, Onboarding.
-  Design Agent bu skill'i ekran tipi belirlerken kullanir.
+  Core screen templates: Login, Signup, Profile, Settings, Onboarding.
+  Design Agent uses this skill when determining screen types.
 ---
 
 # Screen Patterns
 
-Bu skill, yaygin ekran turleri icin hazir sablonlar icerir.
+This skill contains ready-made templates for common screen types.
 
-## LOGIN EKRANI
+## LOGIN SCREEN
 
-### Yapi
+### Structure
 ```
 [Main Frame - device size]
 ├── [Content - vertical, center aligned]
 │   ├── [Logo/App Icon - 64x64]
-│   ├── [Title - "Hosgeldiniz"]
+│   ├── [Title - "Welcome"]
 │   ├── [Subtitle - muted text]
 │   ├── [Spacer - 32px]
 │   ├── [Email Input]
@@ -24,12 +24,12 @@ Bu skill, yaygin ekran turleri icin hazir sablonlar icerir.
 │   ├── [Forgot Password Link - right aligned]
 │   ├── [Spacer - 24px]
 │   ├── [Login Button - primary, full width]
-│   ├── [Divider - "veya"]
+│   ├── [Divider - "or"]
 │   ├── [Social Login Buttons]
-│   └── [Signup Link - "Hesabiniz yok mu?"]
+│   └── [Signup Link - "Don't have an account?"]
 ```
 
-### Kod Ornegi
+### Code Example
 ```typescript
 // Login Screen
 const mainFrame = figma_create_frame({
@@ -63,7 +63,7 @@ const logo = figma_create_frame({
 
 // Title
 figma_create_text({
-  content: "Hosgeldiniz",
+  content: "Welcome",
   parentId: content.nodeId,
   style: { fontSize: 28, fontWeight: 700 },
   fill: { type: "SOLID", color: "#FAFAFA" }
@@ -71,7 +71,7 @@ figma_create_text({
 
 // Subtitle
 figma_create_text({
-  content: "Devam etmek icin giris yapin",
+  content: "Sign in to continue",
   parentId: content.nodeId,
   style: { fontSize: 14, fontWeight: 400 },
   fill: { type: "SOLID", color: "#A1A1AA" }
@@ -87,21 +87,21 @@ figma_set_layout_sizing({ nodeId: inputGroup.nodeId, horizontal: "FILL" })
 
 // Email Input
 const emailInput = figma_create_input({
-  placeholder: "E-posta adresiniz",
+  placeholder: "Your email address",
   parentId: inputGroup.nodeId
 })
 figma_set_layout_sizing({ nodeId: emailInput.nodeId, horizontal: "FILL" })
 
 // Password Input
 const passwordInput = figma_create_input({
-  placeholder: "Sifreniz",
+  placeholder: "Your password",
   parentId: inputGroup.nodeId
 })
 figma_set_layout_sizing({ nodeId: passwordInput.nodeId, horizontal: "FILL" })
 
 // Login Button
 const loginBtn = figma_create_button({
-  text: "Giris Yap",
+  text: "Sign In",
   variant: "primary",
   parentId: content.nodeId
 })
@@ -110,30 +110,30 @@ figma_set_layout_sizing({ nodeId: loginBtn.nodeId, horizontal: "FILL" })
 
 ---
 
-## SIGNUP EKRANI
+## SIGNUP SCREEN
 
-### Yapi
+### Structure
 ```
 [Main Frame]
 ├── [Header - back button + progress indicator]
 ├── [Content]
-│   ├── [Title - "Hesap Olustur"]
+│   ├── [Title - "Create Account"]
 │   ├── [Full Name Input]
 │   ├── [Email Input]
 │   ├── [Password Input]
 │   ├── [Confirm Password Input]
 │   ├── [Terms Checkbox]
 │   └── [Signup Button]
-└── [Footer - "Zaten hesabiniz var mi?"]
+└── [Footer - "Already have an account?"]
 ```
 
-### Ozellikler
-- Progress indicator (step 1/3 gibi)
+### Features
+- Progress indicator (like step 1/3)
 - Password strength indicator
 - Terms & conditions checkbox
 - Back navigation
 
-### Kod Ornegi
+### Code Example
 ```typescript
 // Signup Screen
 const mainFrame = figma_create_frame({
@@ -190,12 +190,12 @@ figma_create_frame({
 
 ---
 
-## PROFILE EKRANI
+## PROFILE SCREEN
 
-### Yapi
+### Structure
 ```
 [Main Frame]
-├── [Header - "Profil" + Settings icon]
+├── [Header - "Profile" + Settings icon]
 ├── [Content]
 │   ├── [Avatar Section]
 │   │   ├── [Avatar - 80x80, circular]
@@ -236,7 +236,7 @@ const avatar = figma_create_frame({
   parentId: avatarSection.nodeId,
   width: 80, height: 80,
   fill: { type: "SOLID", color: "#27272A" },
-  cornerRadius: 40  // tam yuvarlak
+  cornerRadius: 40  // fully circular
 })
 
 // Name
@@ -300,25 +300,25 @@ createStatItem("456", "Following")
 
 ---
 
-## SETTINGS EKRANI
+## SETTINGS SCREEN
 
-### Yapi
+### Structure
 ```
 [Main Frame]
-├── [Header - back + "Ayarlar"]
+├── [Header - back + "Settings"]
 ├── [Content - scrollable]
-│   ├── [Section: Gorunum]
+│   ├── [Section: Appearance]
 │   │   ├── [Dark Mode Toggle]
 │   │   └── [Language Selector]
-│   ├── [Section: Bildirimler]
+│   ├── [Section: Notifications]
 │   │   ├── [Push Notifications Toggle]
 │   │   ├── [Email Notifications Toggle]
 │   │   └── [Sound Toggle]
-│   ├── [Section: Guvenlik]
+│   ├── [Section: Security]
 │   │   ├── [Change Password]
 │   │   ├── [Two-Factor Auth]
 │   │   └── [Biometric Login]
-│   └── [Section: Hakkinda]
+│   └── [Section: About]
 │       ├── [Version Info]
 │       ├── [Terms of Service]
 │       └── [Privacy Policy]
@@ -382,9 +382,9 @@ const createSection = (title) => {
 
 ---
 
-## ONBOARDING EKRANI
+## ONBOARDING SCREEN
 
-### Yapi (Carousel Style)
+### Structure (Carousel Style)
 ```
 [Main Frame]
 ├── [Content - centered]
@@ -442,14 +442,14 @@ figma_set_layout_sizing({ nodeId: footer.nodeId, horizontal: "FILL" })
 
 // Skip button
 figma_create_button({
-  text: "Atla",
+  text: "Skip",
   variant: "ghost",
   parentId: footer.nodeId
 })
 
 // Next button
 figma_create_button({
-  text: "Devam",
+  text: "Continue",
   variant: "primary",
   parentId: footer.nodeId
 })
@@ -457,13 +457,13 @@ figma_create_button({
 
 ---
 
-## EKRAN TIPI SECIM KURALLARI
+## SCREEN TYPE SELECTION RULES
 
-| Prompt Icerigi | Ekran Tipi |
-|----------------|------------|
-| "login", "giris", "oturum ac" | Login |
-| "signup", "kayit", "hesap olustur" | Signup |
-| "profil", "profile", "hesabim" | Profile |
-| "ayarlar", "settings", "tercihler" | Settings |
-| "onboarding", "karsilama", "baslangic" | Onboarding |
-| "dashboard", "ana sayfa", "home" | Dashboard |
+| Prompt Content | Screen Type |
+|----------------|-------------|
+| "login", "sign in", "log in" | Login |
+| "signup", "register", "create account" | Signup |
+| "profile", "my account", "user profile" | Profile |
+| "settings", "preferences", "options" | Settings |
+| "onboarding", "welcome", "getting started" | Onboarding |
+| "dashboard", "home page", "home" | Dashboard |

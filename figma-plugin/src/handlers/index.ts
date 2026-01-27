@@ -18,6 +18,7 @@ export {
   handleCreatePolygon,
   handleCreateStar,
   handleCreateVector,
+  handleSetVectorPaths,
 } from "./shapes";
 
 // ============================================================================
@@ -65,6 +66,7 @@ export {
   handleSetLayoutGrid,
   handleGetLayoutGrid,
   handleReorderChildren,
+  handleLintLayout,
 } from "./layout";
 
 // ============================================================================
@@ -107,6 +109,9 @@ export {
   handleFlattenNode,
   handleSetVisibility,
   handleSetLocked,
+  handleBooleanOperation,
+  handleCreateMask,
+  handleSetMask,
 } from "./manipulation";
 
 // ============================================================================

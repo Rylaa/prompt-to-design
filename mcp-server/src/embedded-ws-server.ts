@@ -1,6 +1,6 @@
 /**
  * Embedded WebSocket Server
- * MCP Server içinde çalışır, Figma Plugin ile doğrudan iletişim kurar
+ * Runs inside MCP Server, communicates directly with Figma Plugin
  */
 
 import { WebSocketServer, WebSocket } from "ws";
@@ -69,7 +69,7 @@ class EmbeddedWSServer {
   }
 
   /**
-   * Bu server'ın session bilgisini ayarla
+   * Set this server's session info
    */
   public setSessionInfo(sessionId: string, sessionName: string): void {
     this.currentSessionId = sessionId;
@@ -162,7 +162,7 @@ class EmbeddedWSServer {
     switch (message.type) {
       case "REGISTER":
         if (message.source === "figma") {
-          // Eğer session ID belirtilmemişse, eski davranış (otomatik bağlan)
+          // If session ID is not specified, use legacy behavior (auto-connect)
           if (this.figmaClient && this.figmaClient.ws !== ws) {
             console.error("⚠️ Replacing existing Figma client");
             this.figmaClient.ws.close();
@@ -235,7 +235,7 @@ class EmbeddedWSServer {
         break;
 
       case "LIST_SESSIONS": {
-        // Figma tüm aktif session'ları istiyor
+        // Figma is requesting all active sessions
         const registry = getSessionRegistry();
         const sessions = registry.getAllSessions().map((s) => ({
           ...s,
@@ -273,7 +273,7 @@ class EmbeddedWSServer {
           break;
         }
 
-        // Bağlantıyı kabul et
+        // Accept the connection
         if (this.figmaClient && this.figmaClient.ws !== ws) {
           console.error("⚠️ Replacing existing Figma client");
           this.figmaClient.ws.close();

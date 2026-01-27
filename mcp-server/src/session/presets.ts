@@ -1,6 +1,6 @@
 /**
  * Device Presets & Default Themes
- * Mobile-first cihaz boyutları ve varsayılan tema
+ * Mobile-first device dimensions and default themes
  */
 
 import type { DevicePreset, ThemeConfig } from "./types.js";

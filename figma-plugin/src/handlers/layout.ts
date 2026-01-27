@@ -1,7 +1,7 @@
 // figma-plugin/src/handlers/layout.ts
 /**
  * Layout management handlers
- * Handles: SetAutoLayout, SetConstraints, SetLayoutSizing, SetLayoutGrid, GetLayoutGrid, ReorderChildren
+ * Handles: SetAutoLayout, SetConstraints, SetLayoutSizing, SetLayoutGrid, GetLayoutGrid, ReorderChildren, LintLayout
  */
 
 // Handler utilities
@@ -16,6 +16,9 @@ import {
   parseColor,
   applyAutoLayout,
 } from "./utils";
+
+// Spacing tokens for lint validation
+import { spacing } from "../tokens/spacing";
 
 // ============================================================================
 // SetAutoLayout Handler
@@ -211,6 +214,171 @@ async function handleReorderChildren(params: Record<string, unknown>): Promise<{
 }
 
 // ============================================================================
+// LintLayout Handler
+// ============================================================================
+
+// Valid spacing tokens for lint validation
+const VALID_SPACING_TOKENS = Object.values(spacing);
+
+// Lint violation types
+type LintRule =
+  | "NO_ABSOLUTE_POSITION"
+  | "AUTO_LAYOUT_REQUIRED"
+  | "VALID_SIZING_MODE"
+  | "SPACING_TOKEN_ONLY"
+  | "FILL_REQUIRED_ON_ROOT";
+
+interface LintViolation {
+  nodeId: string;
+  nodeName: string;
+  rule: LintRule;
+  message: string;
+}
+
+interface LintLayoutResult {
+  passed: boolean;
+  violations: LintViolation[];
+}
+
+/**
+ * Validates Auto Layout rules on a node tree
+ * @param params - Parameters including nodeId, rules array, and recursive flag
+ * @returns LintResult with passed status and violations array
+ */
+async function handleLintLayout(
+  params: Record<string, unknown>
+): Promise<LintLayoutResult> {
+  const nodeId = params.nodeId as string;
+  const rules = (params.rules as LintRule[]) || [
+    "NO_ABSOLUTE_POSITION",
+    "AUTO_LAYOUT_REQUIRED",
+    "VALID_SIZING_MODE",
+  ];
+  const recursive = (params.recursive as boolean) ?? true;
+
+  const node = await getNodeOrThrow(nodeId);
+  const violations: LintViolation[] = [];
+
+  // Helper to check a single node
+  function checkNode(n: SceneNode, isRoot: boolean): void {
+    // FILL_REQUIRED_ON_ROOT - Root frame must have a fill
+    if (isRoot && rules.includes("FILL_REQUIRED_ON_ROOT")) {
+      if ("fills" in n) {
+        const fills = (n as GeometryMixin).fills as readonly Paint[];
+        if (!fills || fills.length === 0) {
+          violations.push({
+            nodeId: n.id,
+            nodeName: n.name,
+            rule: "FILL_REQUIRED_ON_ROOT",
+            message: "Root frame must have a fill color",
+          });
+        }
+      }
+    }
+
+    // Only check frames for layout rules
+    if (n.type !== "FRAME") return;
+    const frame = n as FrameNode;
+
+    // AUTO_LAYOUT_REQUIRED - All frames must have Auto Layout enabled
+    if (rules.includes("AUTO_LAYOUT_REQUIRED")) {
+      if (frame.layoutMode === "NONE") {
+        violations.push({
+          nodeId: frame.id,
+          nodeName: frame.name,
+          rule: "AUTO_LAYOUT_REQUIRED",
+          message: "Frame does not have Auto Layout enabled",
+        });
+      }
+    }
+
+    // NO_ABSOLUTE_POSITION - No x,y positioning should be used
+    if (rules.includes("NO_ABSOLUTE_POSITION")) {
+      if (frame.layoutMode === "NONE" && (frame.x !== 0 || frame.y !== 0)) {
+        violations.push({
+          nodeId: frame.id,
+          nodeName: frame.name,
+          rule: "NO_ABSOLUTE_POSITION",
+          message: `Frame uses absolute position (x: ${frame.x}, y: ${frame.y})`,
+        });
+      }
+    }
+
+    // SPACING_TOKEN_ONLY - Spacing values must match token system
+    if (rules.includes("SPACING_TOKEN_ONLY") && frame.layoutMode !== "NONE") {
+      if (!VALID_SPACING_TOKENS.includes(frame.itemSpacing)) {
+        violations.push({
+          nodeId: frame.id,
+          nodeName: frame.name,
+          rule: "SPACING_TOKEN_ONLY",
+          message: `Item spacing ${frame.itemSpacing} is not a valid spacing token`,
+        });
+      }
+      const paddings = [
+        frame.paddingTop,
+        frame.paddingRight,
+        frame.paddingBottom,
+        frame.paddingLeft,
+      ];
+      for (const pad of paddings) {
+        if (!VALID_SPACING_TOKENS.includes(pad)) {
+          violations.push({
+            nodeId: frame.id,
+            nodeName: frame.name,
+            rule: "SPACING_TOKEN_ONLY",
+            message: `Padding value ${pad} is not a valid spacing token`,
+          });
+          break; // Only report once per frame
+        }
+      }
+    }
+
+    // VALID_SIZING_MODE - Children use FILL/HUG/FIXED correctly
+    if (rules.includes("VALID_SIZING_MODE") && frame.layoutMode !== "NONE") {
+      const hSizing = frame.layoutSizingHorizontal;
+      const vSizing = frame.layoutSizingVertical;
+      if (!["FIXED", "HUG", "FILL"].includes(hSizing)) {
+        violations.push({
+          nodeId: frame.id,
+          nodeName: frame.name,
+          rule: "VALID_SIZING_MODE",
+          message: `Invalid horizontal sizing mode: ${hSizing}`,
+        });
+      }
+      if (!["FIXED", "HUG", "FILL"].includes(vSizing)) {
+        violations.push({
+          nodeId: frame.id,
+          nodeName: frame.name,
+          rule: "VALID_SIZING_MODE",
+          message: `Invalid vertical sizing mode: ${vSizing}`,
+        });
+      }
+    }
+  }
+
+  // Check root node
+  checkNode(node, true);
+
+  // Recursively check children
+  if (recursive && canHaveChildren(node)) {
+    function checkChildren(parent: FrameNode | GroupNode | ComponentNode): void {
+      for (const child of parent.children) {
+        checkNode(child, false);
+        if (canHaveChildren(child)) {
+          checkChildren(child as FrameNode | GroupNode | ComponentNode);
+        }
+      }
+    }
+    checkChildren(node as FrameNode | GroupNode | ComponentNode);
+  }
+
+  return {
+    passed: violations.length === 0,
+    violations,
+  };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -221,4 +389,5 @@ export {
   handleSetLayoutGrid,
   handleGetLayoutGrid,
   handleReorderChildren,
+  handleLintLayout,
 };

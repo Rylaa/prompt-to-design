@@ -9,7 +9,7 @@ description: |
   </example>
 
   <example>
-  user: "VideoRef Create ekranını oluştur"
+  user: "Create the VideoRef Create screen"
   assistant: Uses figma-design-executor agent to implement the screen
   </example>
 

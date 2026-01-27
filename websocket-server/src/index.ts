@@ -1,6 +1,6 @@
 /**
  * WebSocket Bridge Server
- * MCP Server ile Figma Plugin arasında köprü görevi görür
+ * Acts as a bridge between MCP Server and Figma Plugin
  */
 
 import { WebSocketServer, WebSocket } from "ws";

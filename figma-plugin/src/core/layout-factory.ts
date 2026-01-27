@@ -1,7 +1,7 @@
 /**
  * Layout Factory
- * Tüm frame oluşturma BU modülden geçmek ZORUNDA
- * Raw figma.createFrame() YASAK
+ * ALL frame creation MUST go through this module
+ * Direct figma.createFrame() is FORBIDDEN
  */
 
 import type {
@@ -16,7 +16,7 @@ import { getShadcnColors } from "../tokens";
 import type { SpacingKey, RadiusKey } from "../tokens/spacing";
 
 /**
- * Spacing key'i pixel değerine çevir
+ * Convert spacing key to pixel value
  */
 export function resolveSpacing(key: SpacingKey | undefined): number {
   if (!key) return 0;
@@ -24,7 +24,7 @@ export function resolveSpacing(key: SpacingKey | undefined): number {
 }
 
 /**
- * Radius key'i pixel değerine çevir
+ * Convert radius key to pixel value
  */
 export function resolveRadius(key: RadiusKey | undefined): number {
   if (!key) return 0;
@@ -32,7 +32,7 @@ export function resolveRadius(key: RadiusKey | undefined): number {
 }
 
 /**
- * Semantic fill'i Figma paint'e çevir
+ * Convert semantic fill to Figma paint
  */
 export function resolveFill(
   fill: FillConfig | undefined,
@@ -69,13 +69,13 @@ export function resolveFill(
 }
 
 /**
- * Spacing config'i uygula
+ * Apply spacing config
  */
 function applySpacing(frame: FrameNode, config: SpacingConfig): void {
   // Gap
   frame.itemSpacing = resolveSpacing(config.gap);
 
-  // Padding - shorthand varsa onu kullan
+  // Padding - use shorthand if provided
   if (config.padding) {
     const p = resolveSpacing(config.padding);
     frame.paddingTop = p;
@@ -91,16 +91,16 @@ function applySpacing(frame: FrameNode, config: SpacingConfig): void {
 }
 
 /**
- * ANA FACTORY FONKSİYONU
- * Tüm frame oluşturma buradan geçmeli
+ * MAIN FACTORY FUNCTION
+ * All frame creation should go through here
  */
 export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
   const frame = figma.createFrame();
 
-  // İsim
+  // Name
   frame.name = config.name ?? "Frame";
 
-  // ZORUNLU: Auto Layout aktif
+  // REQUIRED: Auto Layout active
   frame.layoutMode = config.direction;
 
   // Sizing modes
@@ -116,11 +116,11 @@ export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
   // Spacing
   applySpacing(frame, config.spacing);
 
-  // Fill - belirtilmezse TRANSPARENT (Figma varsayılanı beyaz, bunu override ediyoruz)
+  // Fill - if not specified, TRANSPARENT (Figma default is white, we override this)
   if (config.fill) {
     frame.fills = resolveFill(config.fill, config.theme);
   } else {
-    frame.fills = []; // Transparent - child frame'ler için
+    frame.fills = []; // Transparent - for child frames
   }
 
   // Corner radius
@@ -128,7 +128,7 @@ export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
     frame.cornerRadius = resolveRadius(config.cornerRadius);
   }
 
-  // Explicit dimensions (sadece FIXED için)
+  // Explicit dimensions (only for FIXED)
   if (config.width && config.primaryAxisSizing === "FIXED") {
     frame.resize(config.width, frame.height);
   }
@@ -157,7 +157,7 @@ export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
     }
   }
 
-  // Parent'a ekle
+  // Add to parent
   if (config.parent) {
     config.parent.appendChild(frame);
   } else {
@@ -168,8 +168,8 @@ export function createAutoLayout(config: AutoLayoutConfig): FrameNode {
 }
 
 /**
- * Layout sizing ayarla
- * Auto Layout child'ları için FILL/HUG/FIXED
+ * Set layout sizing
+ * FILL/HUG/FIXED for Auto Layout children
  */
 export function setLayoutSizing(
   node: SceneNode,
@@ -189,7 +189,7 @@ export function setLayoutSizing(
 }
 
 /**
- * Mevcut frame'e Auto Layout ekle
+ * Add Auto Layout to existing frame
  */
 export function enableAutoLayout(
   frame: FrameNode,

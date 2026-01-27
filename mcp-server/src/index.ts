@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Prompt-to-Design MCP Server
- * Claude Code CLI ile Figma'da tasarım oluşturma
+ * Create designs in Figma with Claude Code CLI
  */
 
 import path from "path";
@@ -20,12 +20,12 @@ const server = new McpServer({
 // Register all Figma tools
 registerAllTools(server);
 
-// Session adını belirle (CWD'nin son kısmı veya default)
+// Determine session name (last part of CWD or default)
 const cwd = process.cwd();
 const sessionName = path.basename(cwd) || "Claude Session";
 const port = parseInt(process.env.WEBSOCKET_PORT || "9001");
 
-// Session'ı registry'e kaydet
+// Register session in registry
 const registry = getSessionRegistry();
 const session = registry.registerSession(sessionName, port);
 
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
     await startServer();
     console.error(`Embedded WebSocket server started on port ${port}`);
 
-    // WebSocket server'a session bilgisini aktar
+    // Transfer session info to WebSocket server
     const wsServer = getServer();
     wsServer.setSessionInfo(session.sessionId, sessionName);
   } catch (error) {

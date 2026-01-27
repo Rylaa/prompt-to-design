@@ -9,32 +9,32 @@ arguments:
 
 # Design Workflow Starter
 
-Kullanıcı bir tasarım isteği ile geldi. Design Agent'ı başlat.
+The user has come with a design request. Start the Design Agent.
 
-## Kullanıcının İsteği
+## User's Request
 
 $ARGUMENTS
 
-## Görev
+## Task
 
-Design Agent'ı çağırarak tasarım workflow'unu başlat:
+Start the design workflow by calling the Design Agent:
 
 ```
 Task(
   subagent_type="design-agent",
-  prompt="Kullanıcı şunu istiyor: $ARGUMENTS"
+  prompt="User wants: $ARGUMENTS"
 )
 ```
 
-Design Agent:
-1. Session oluşturacak
-2. Device seçecek
-3. Layout planlayacak
-4. Component'leri belirleyecek
-5. Execution Agent'ı çağıracak
+Design Agent will:
+1. Create a session
+2. Select device
+3. Plan layout
+4. Determine components
+5. Call Execution Agent
 
-Execution Agent:
-1. Figma bağlantısını kontrol edecek
-2. Frame'leri oluşturacak
-3. Component'leri yerleştirecek
-4. Session'a kaydedecek
+Execution Agent will:
+1. Check Figma connection
+2. Create frames
+3. Place components
+4. Save to session

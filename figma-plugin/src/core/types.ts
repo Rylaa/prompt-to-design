@@ -1,6 +1,6 @@
 /**
  * Core Layout Types
- * Auto Layout tabanlı type-safe frame oluşturma
+ * Type-safe frame creation with Auto Layout
  */
 
 import type { SpacingKey, RadiusKey } from "../tokens/spacing";
@@ -15,14 +15,14 @@ export type SizingMode = "FIXED" | "HUG" | "FILL";
 export type PrimaryAxisAlign = "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
 export type CounterAxisAlign = "MIN" | "CENTER" | "MAX" | "BASELINE";
 
-// Spacing - sadece token key kabul eder, raw number YASAK
+// Spacing - only accepts token keys, raw numbers are FORBIDDEN
 export interface SpacingConfig {
   gap?: SpacingKey;
   paddingTop?: SpacingKey;
   paddingRight?: SpacingKey;
   paddingBottom?: SpacingKey;
   paddingLeft?: SpacingKey;
-  // Shorthand - tüm padding'leri aynı yapar
+  // Shorthand - sets all padding to the same value
   padding?: SpacingKey;
 }
 
@@ -48,7 +48,7 @@ export type SemanticColorToken =
   | "input"
   | "ring";
 
-// Fill config - hex YASAK, sadece token veya semantic color
+// Fill config - hex is FORBIDDEN, only token or semantic color
 export interface SemanticFillConfig {
   type: "SEMANTIC";
   token: SemanticColorToken;
@@ -74,16 +74,16 @@ export interface AutoLayoutConfig {
   counterAxisSizing?: SizingMode;
   fill?: FillConfig;
   cornerRadius?: RadiusKey;
-  // Parent - undefined ise currentPage'e eklenir
+  // Parent - if undefined, added to currentPage
   parent?: FrameNode | ComponentNode;
-  // Explicit width/height - sadece FIXED sizing için
+  // Explicit width/height - only for FIXED sizing
   width?: number;
   height?: number;
   // Theme for semantic colors
   theme?: "light" | "dark";
 }
 
-// Layout sizing ayarı için
+// For layout sizing configuration
 export interface LayoutSizingConfig {
   horizontal?: SizingMode;
   vertical?: SizingMode;

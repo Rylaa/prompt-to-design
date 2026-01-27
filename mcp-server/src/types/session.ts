@@ -1,5 +1,5 @@
 /**
- * Session Types - MCP Session tanımları
+ * Session Types - MCP Session definitions
  */
 
 export interface MCPSession {

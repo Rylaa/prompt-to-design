@@ -417,3 +417,147 @@ export async function handleSetLocked(
 
   return { success: true };
 }
+
+// ============================================================================
+// Boolean Operations
+// ============================================================================
+
+/**
+ * Performs a boolean operation on multiple shapes.
+ * @param params - Object containing nodeIds array, operation type, and optional name
+ * @returns Node ID of the resulting boolean group
+ */
+export async function handleBooleanOperation(
+  params: Record<string, unknown>
+): Promise<{ nodeId: string }> {
+  const nodeIds = params.nodeIds as string[];
+  const operation = params.operation as "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
+  const name = (params.name as string) || `Boolean ${operation}`;
+
+  if (!nodeIds || nodeIds.length < 2) {
+    throw new Error("Boolean operation requires at least 2 nodes");
+  }
+
+  const nodes: SceneNode[] = [];
+  for (const id of nodeIds) {
+    const node = await getNode(id);
+    if (node) {
+      nodes.push(node);
+    }
+  }
+
+  if (nodes.length < 2) {
+    throw new Error("Could not find enough nodes for boolean operation");
+  }
+
+  let result: BooleanOperationNode;
+  switch (operation) {
+    case "UNION":
+      result = figma.union(nodes, figma.currentPage);
+      break;
+    case "SUBTRACT":
+      result = figma.subtract(nodes, figma.currentPage);
+      break;
+    case "INTERSECT":
+      result = figma.intersect(nodes, figma.currentPage);
+      break;
+    case "EXCLUDE":
+      result = figma.exclude(nodes, figma.currentPage);
+      break;
+    default:
+      throw new Error(`Unknown boolean operation: ${operation}`);
+  }
+
+  result.name = name;
+
+  // Move to parent if specified
+  if (params.parentId) {
+    const parent = await getNode(params.parentId as string);
+    if (parent && "appendChild" in parent) {
+      (parent as FrameNode).appendChild(result);
+    }
+  }
+
+  registerNode(result);
+  return { nodeId: result.id };
+}
+
+// ============================================================================
+// Mask Operations
+// ============================================================================
+
+/**
+ * Creates a mask from a node.
+ * @param params - Object containing maskNodeId, contentNodeIds, optional name and parentId
+ * @returns Group ID of the masked group
+ */
+export async function handleCreateMask(
+  params: Record<string, unknown>
+): Promise<{ groupId: string }> {
+  const maskNodeId = params.maskNodeId as string;
+  const contentNodeIds = params.contentNodeIds as string[];
+  const name = (params.name as string) || "Masked Group";
+
+  const maskNode = await getNode(maskNodeId);
+  if (!maskNode) {
+    throw new Error(`Mask node not found: ${maskNodeId}`);
+  }
+
+  const contentNodes: SceneNode[] = [];
+  for (const id of contentNodeIds) {
+    const node = await getNode(id);
+    if (node) {
+      contentNodes.push(node);
+    }
+  }
+
+  if (contentNodes.length === 0) {
+    throw new Error("No content nodes found");
+  }
+
+  // Set the mask node's isMask property
+  if ("isMask" in maskNode) {
+    (maskNode as SceneNode & BlendMixin).isMask = true;
+  }
+
+  // Group all nodes together (mask first, then content)
+  const allNodes = [maskNode, ...contentNodes];
+  const group = figma.group(allNodes, figma.currentPage);
+  group.name = name;
+
+  // Move to parent if specified
+  if (params.parentId) {
+    const parent = await getNode(params.parentId as string);
+    if (parent && "appendChild" in parent) {
+      (parent as FrameNode).appendChild(group);
+    }
+  }
+
+  registerNode(group);
+  return { groupId: group.id };
+}
+
+/**
+ * Toggles mask property on a node.
+ * @param params - Object containing nodeId and isMask boolean
+ * @returns Success confirmation
+ */
+export async function handleSetMask(
+  params: Record<string, unknown>
+): Promise<{ success: boolean }> {
+  const nodeId = params.nodeId as string;
+  const isMask = params.isMask as boolean;
+
+  const node = await getNode(nodeId);
+  if (!node) {
+    throw new Error(`Node not found: ${nodeId}`);
+  }
+
+  if ("isMask" in node) {
+    (node as SceneNode & BlendMixin).isMask = isMask;
+  } else {
+    throw new Error("Node does not support mask property");
+  }
+
+  return { success: true };
+}

@@ -1,6 +1,6 @@
 /**
  * WebSocket Bridge Client
- * MCP Server'dan WebSocket Server'a bağlanır ve Figma'ya komut gönderir
+ * Connects to WebSocket Server from MCP Server and sends commands to Figma
  */
 
 import WebSocket from "ws";

@@ -423,6 +423,36 @@ async function handleCreateStar(params: Record<string, unknown>): Promise<{ node
 }
 
 // ============================================================================
+// SetVectorPaths Handler
+// ============================================================================
+
+/**
+ * Updates the paths on an existing vector node.
+ * @param params - Object containing nodeId and paths array
+ * @returns Success confirmation
+ */
+async function handleSetVectorPaths(
+  params: Record<string, unknown>
+): Promise<{ success: boolean }> {
+  const nodeId = params.nodeId as string;
+  const paths = params.paths as Array<{ windingRule?: string; data: string }>;
+
+  const node = await getNode(nodeId);
+  if (!node || node.type !== "VECTOR") {
+    throw new Error(`Vector node not found: ${nodeId}`);
+  }
+
+  const vectorPaths: VectorPath[] = paths.map(p => ({
+    windingRule: (p.windingRule as "NONZERO" | "EVENODD") || "NONZERO",
+    data: p.data,
+  }));
+
+  (node as VectorNode).vectorPaths = vectorPaths;
+
+  return { success: true };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -434,4 +464,5 @@ export {
   handleCreatePolygon,
   handleCreateStar,
   handleCreateVector,
+  handleSetVectorPaths,
 };
