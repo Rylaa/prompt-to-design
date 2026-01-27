@@ -1341,6 +1341,48 @@ export interface LintResult {
 }
 
 // ============================================================================
+// Smart Layout Schemas
+// ============================================================================
+
+export const SmartLayoutInputSchema = z.object({
+  nodeId: z.string().describe("Target node ID to optimize layout"),
+  strategy: z.enum([
+    "AUTO_DETECT",      // Analyze content and choose best layout
+    "CARD_GRID",        // Optimize for card-based layouts
+    "FORM_LAYOUT",      // Optimize for form inputs
+    "NAVIGATION",       // Optimize for nav items
+    "CONTENT_STACK",    // Optimize for content sections
+    "HERO_SECTION",     // Optimize for hero/landing sections
+  ]).optional().default("AUTO_DETECT").describe("Layout optimization strategy"),
+  options: z.object({
+    enforceGrid: z.boolean().optional().default(true).describe("Snap spacing to 8-point grid"),
+    autoGroup: z.boolean().optional().default(true).describe("Auto-group related elements"),
+    optimizeHierarchy: z.boolean().optional().default(true).describe("Optimize visual hierarchy"),
+    targetPlatform: z.enum(["web", "ios", "android"]).optional().default("web"),
+  }).optional(),
+}).strict();
+
+export type SmartLayoutInput = z.infer<typeof SmartLayoutInputSchema>;
+
+export const SmartLayoutResultSchema = z.object({
+  success: z.boolean(),
+  changes: z.array(z.object({
+    nodeId: z.string(),
+    nodeName: z.string(),
+    changeType: z.string(),
+    before: z.unknown(),
+    after: z.unknown(),
+  })),
+  suggestions: z.array(z.object({
+    nodeId: z.string(),
+    message: z.string(),
+    priority: z.enum(["high", "medium", "low"]),
+  })),
+});
+
+export type SmartLayoutResult = z.infer<typeof SmartLayoutResultSchema>;
+
+// ============================================================================
 // Visual Debug Mode Schemas
 // ============================================================================
 
