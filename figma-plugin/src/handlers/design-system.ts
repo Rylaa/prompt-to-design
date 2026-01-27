@@ -8,7 +8,6 @@
 // Handler utilities
 import {
   registerNode,
-  getNode,
   attachToParentOrPage,
 } from "./utils";
 
@@ -28,6 +27,31 @@ import { createShadcnComponent } from "../components/shadcn";
 import { createIOSComponent } from "../components/apple-ios";
 import { createMacOSComponent } from "../components/apple-macos";
 import { createLiquidGlassComponent, listLiquidGlassComponents } from "../components/liquid-glass";
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Finalizes a design system component by attaching to parent, scrolling into view, and registering
+ * @param node - The created component node
+ * @param parentId - Optional parent ID to attach to
+ * @returns Object with nodeId
+ */
+async function finalizeComponent(
+  node: SceneNode,
+  parentId?: string
+): Promise<{ nodeId: string }> {
+  await attachToParentOrPage(node, parentId);
+
+  // Scroll into view if added to page (not to a parent)
+  if (!parentId) {
+    figma.viewport.scrollAndZoomIntoView([node]);
+  }
+
+  registerNode(node);
+  return { nodeId: node.id };
+}
 
 // ============================================================================
 // Theme Handlers
@@ -100,16 +124,7 @@ async function handleCreateShadcnComponent(
     throw new Error(`Failed to create shadcn component: ${componentName}`);
   }
 
-  // Attach to parent or page
-  await attachToParentOrPage(node, params.parentId as string | undefined);
-
-  // Scroll into view if added to page (not to a parent)
-  if (!params.parentId) {
-    figma.viewport.scrollAndZoomIntoView([node]);
-  }
-
-  registerNode(node);
-  return { nodeId: node.id };
+  return await finalizeComponent(node, params.parentId as string | undefined);
 }
 
 /**
@@ -137,16 +152,7 @@ async function handleCreateAppleComponent(
     throw new Error(`Failed to create ${platform} component: ${componentName}`);
   }
 
-  // Attach to parent or page
-  await attachToParentOrPage(node, params.parentId as string | undefined);
-
-  // Scroll into view if added to page (not to a parent)
-  if (!params.parentId) {
-    figma.viewport.scrollAndZoomIntoView([node]);
-  }
-
-  registerNode(node);
-  return { nodeId: node.id };
+  return await finalizeComponent(node, params.parentId as string | undefined);
 }
 
 /**
@@ -169,16 +175,7 @@ async function handleCreateLiquidGlassComponent(
     );
   }
 
-  // Attach to parent or page
-  await attachToParentOrPage(node, params.parentId as string | undefined);
-
-  // Scroll into view if added to page (not to a parent)
-  if (!params.parentId) {
-    figma.viewport.scrollAndZoomIntoView([node]);
-  }
-
-  registerNode(node);
-  return { nodeId: node.id };
+  return await finalizeComponent(node, params.parentId as string | undefined);
 }
 
 // ============================================================================
