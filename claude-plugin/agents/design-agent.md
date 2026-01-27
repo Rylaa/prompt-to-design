@@ -147,18 +147,20 @@ Every region and component must include these fields:
     {
       "name": "Header",
       "autoLayout": { "mode": "HORIZONTAL", "padding": 16, "spacing": 12 },
-      "sizing": { "horizontal": "FILL" },
+      "layoutSizing": { "horizontal": "FILL" },
       "components": [
         {
           "type": "text",
           "props": { "content": "Title" },
-          "sizing": { "horizontal": "FILL" }
+          "layoutSizing": { "horizontal": "FILL" }
         }
       ]
     }
   ]
 }
 ```
+
+**Note:** Use `layoutSizing` (not `sizing`) - this maps directly to Figma's `layoutSizingHorizontal` and `layoutSizingVertical` parameters.
 
 ### SPACING TOKENS (Use in Plan)
 
@@ -274,18 +276,24 @@ Analyze user request and create plan in this JSON format:
     {
       "name": "Header",
       "type": "header",
-      "autoLayout": { "mode": "HORIZONTAL", "padding": 16 },
+      "autoLayout": { "mode": "HORIZONTAL", "padding": 16, "primaryAxisAlign": "SPACE_BETWEEN" },
+      "layoutSizing": { "horizontal": "FILL" },
       "components": [...]
     },
     {
       "name": "Content",
       "type": "content",
       "autoLayout": { "mode": "VERTICAL", "spacing": 16, "padding": 16 },
+      "layoutSizing": { "horizontal": "FILL", "vertical": "FILL" },
       "components": [...]
     }
   ]
 }
 ```
+
+**IMPORTANT:** The `layoutSizing` field MUST be included in each region definition.
+Execution Agent will use this to set `layoutSizingHorizontal` and `layoutSizingVertical`
+parameters directly in the `figma_create_frame` call (NOT as a separate tool call).
 
 ### Step 3: Call Execution Agent
 
@@ -328,22 +336,22 @@ figma_lint_layout({
     {
       "name": "Header",
       "type": "header",
-      "sizing": { "horizontal": "FILL" },
       "autoLayout": { "mode": "HORIZONTAL", "padding": 16, "primaryAxisAlign": "SPACE_BETWEEN" },
+      "layoutSizing": { "horizontal": "FILL" },
       "components": []
     },
     {
       "name": "Content",
       "type": "content",
-      "sizing": { "horizontal": "FILL", "vertical": "FILL" },
       "autoLayout": { "mode": "VERTICAL", "spacing": 16, "padding": 16 },
+      "layoutSizing": { "horizontal": "FILL", "vertical": "FILL" },
       "components": []
     },
     {
       "name": "Footer",
       "type": "footer",
-      "sizing": { "horizontal": "FILL" },
       "autoLayout": { "mode": "HORIZONTAL", "padding": 16 },
+      "layoutSizing": { "horizontal": "FILL" },
       "components": []
     }
   ]
@@ -358,30 +366,30 @@ figma_lint_layout({
       "type": "text",
       "props": { "content": "Title", "fontSize": 24, "fontWeight": 700 },
       "fill": { "type": "SOLID", "color": "#FAFAFA" },
-      "sizing": { "horizontal": "FILL" }
+      "layoutSizing": { "horizontal": "FILL" }
     },
     {
       "type": "button",
       "props": { "text": "Sign In", "variant": "primary" },
-      "sizing": { "horizontal": "FILL" }
+      "layoutSizing": { "horizontal": "FILL" }
     },
     {
       "type": "input",
       "props": { "placeholder": "Email" },
-      "sizing": { "horizontal": "FILL" }
+      "layoutSizing": { "horizontal": "FILL" }
     },
     {
       "type": "card",
       "props": { "shadow": true },
       "fill": { "type": "SOLID", "color": "#18181B" },
-      "sizing": { "horizontal": "FILL" },
+      "layoutSizing": { "horizontal": "FILL" },
       "children": []
     },
     {
       "type": "shadcn",
       "component": "card",
       "props": { "theme": "dark", "title": "Card Title" },
-      "sizing": { "horizontal": "FILL" }
+      "layoutSizing": { "horizontal": "FILL" }
     },
     {
       "type": "kpi-card",
@@ -392,7 +400,7 @@ figma_lint_layout({
         "changeType": "positive",
         "icon": "dollar-sign"
       },
-      "sizing": { "horizontal": "FILL" }
+      "layoutSizing": { "horizontal": "FILL" }
     }
   ]
 }
