@@ -130,6 +130,8 @@ import {
   handleGetLayoutGrid,
   handleReorderChildren,
   handleLintLayout,
+  // Smart Layout
+  handleSmartLayout,
   // Styling
   handleSetFill,
   handleSetEffects,
@@ -418,6 +420,9 @@ const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
 
   // === Layout Linting ===
   LINT_LAYOUT: handleLintLayout,
+
+  // === Smart Layout ===
+  SMART_LAYOUT: handleSmartLayout,
 
   // === Visual Debug Mode ===
   TOGGLE_DEBUG_MODE: handleToggleDebugMode,
