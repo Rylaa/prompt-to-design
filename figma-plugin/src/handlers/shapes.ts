@@ -169,6 +169,20 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
   // FILL: Fill parent width/height
   // HUG: Size based on content
   // FIXED: Fixed size
+
+  // Validate parent has auto-layout for FILL sizing
+  const requestedHorizontal = params.layoutSizingHorizontal as string | undefined;
+  const requestedVertical = params.layoutSizingVertical as string | undefined;
+
+  if ((requestedHorizontal === "FILL" || requestedVertical === "FILL") && parent) {
+    if (parent.layoutMode === "NONE") {
+      throw new Error(
+        `FILL sizing requires parent "${parent.name}" to have auto-layout enabled. ` +
+        `Set autoLayout on parent frame first, then create child with FILL sizing.`
+      );
+    }
+  }
+
   if (params.layoutSizingHorizontal) {
     frame.layoutSizingHorizontal = params.layoutSizingHorizontal as "FIXED" | "HUG" | "FILL";
   }
