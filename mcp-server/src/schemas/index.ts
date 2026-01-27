@@ -1303,11 +1303,19 @@ export const ConnectionStatusInputSchema = z.object({}).strict();
 export const LintLayoutInputSchema = z.object({
   nodeId: z.string().describe("Root node ID to lint"),
   rules: z.array(z.enum([
+    // Existing rules
     "NO_ABSOLUTE_POSITION",
     "AUTO_LAYOUT_REQUIRED",
     "VALID_SIZING_MODE",
     "SPACING_TOKEN_ONLY",
-    "FILL_REQUIRED_ON_ROOT"
+    "FILL_REQUIRED_ON_ROOT",
+    // New rules
+    "VISUAL_HIERARCHY",        // Check heading > body > caption size order
+    "CONSISTENT_SPACING",      // Detect inconsistent spacing patterns
+    "PROXIMITY_GROUPING",      // Related items should be closer
+    "ALIGNMENT_CONSISTENCY",   // Elements should align to grid
+    "CONTRAST_RATIO",          // Text contrast check
+    "TOUCH_TARGET_SIZE",       // Min 44x44 for interactive elements
   ])).optional().default([
     "NO_ABSOLUTE_POSITION",
     "AUTO_LAYOUT_REQUIRED",
