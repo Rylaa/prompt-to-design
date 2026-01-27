@@ -226,18 +226,208 @@ type LintRule =
   | "AUTO_LAYOUT_REQUIRED"
   | "VALID_SIZING_MODE"
   | "SPACING_TOKEN_ONLY"
-  | "FILL_REQUIRED_ON_ROOT";
+  | "FILL_REQUIRED_ON_ROOT"
+  // New rules for Layout Intelligence
+  | "VISUAL_HIERARCHY"
+  | "CONSISTENT_SPACING"
+  | "PROXIMITY_GROUPING"
+  | "ALIGNMENT_CONSISTENCY"
+  | "CONTRAST_RATIO"
+  | "TOUCH_TARGET_SIZE";
 
 interface LintViolation {
   nodeId: string;
   nodeName: string;
   rule: LintRule;
   message: string;
+  severity?: "error" | "warning";
 }
 
 interface LintLayoutResult {
   passed: boolean;
   violations: LintViolation[];
+  checkedNodes?: number;
+}
+
+// Extended spacing tokens for consistent spacing validation
+const EXTENDED_SPACING_TOKENS = [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64];
+
+// ============================================================================
+// Layout Intelligence - Lint Rule Helper Functions
+// ============================================================================
+
+/**
+ * Checks visual hierarchy of text elements
+ * Headings should be larger than body text, body larger than captions
+ */
+function checkVisualHierarchy(node: SceneNode, violations: LintViolation[]): void {
+  if (node.type !== "FRAME" && node.type !== "GROUP") return;
+
+  const textNodes: TextNode[] = [];
+  const collectTexts = (n: SceneNode): void => {
+    if (n.type === "TEXT") textNodes.push(n);
+    if ("children" in n) {
+      (n as FrameNode).children.forEach(collectTexts);
+    }
+  };
+  collectTexts(node);
+
+  // Group by apparent role (heading, body, caption)
+  const headings = textNodes.filter(t => (t.fontSize as number) >= 24);
+  const body = textNodes.filter(t => (t.fontSize as number) >= 14 && (t.fontSize as number) < 24);
+
+  // Check hierarchy order (headings should be larger than body)
+  for (const heading of headings) {
+    for (const bodyText of body) {
+      if ((heading.fontSize as number) <= (bodyText.fontSize as number)) {
+        const headingPreview = heading.characters.slice(0, 20);
+        violations.push({
+          nodeId: heading.id,
+          nodeName: heading.name,
+          rule: "VISUAL_HIERARCHY",
+          message: `Heading "${headingPreview}..." (${heading.fontSize}px) should be larger than body text`,
+          severity: "warning",
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Checks for consistent spacing values
+ * Spacing should match the design token system
+ */
+function checkConsistentSpacing(node: SceneNode, violations: LintViolation[]): void {
+  if (node.type !== "FRAME" || (node as FrameNode).layoutMode === "NONE") return;
+
+  const frame = node as FrameNode;
+  const itemSpacing = frame.itemSpacing;
+
+  if (!EXTENDED_SPACING_TOKENS.includes(itemSpacing)) {
+    const nearest = EXTENDED_SPACING_TOKENS.reduce((a, b) =>
+      Math.abs(b - itemSpacing) < Math.abs(a - itemSpacing) ? b : a
+    );
+    violations.push({
+      nodeId: node.id,
+      nodeName: node.name,
+      rule: "CONSISTENT_SPACING",
+      message: `Spacing ${itemSpacing}px is not a standard token. Consider using ${nearest}px`,
+      severity: "warning",
+    });
+  }
+}
+
+/**
+ * Checks touch target sizes for interactive elements
+ * Minimum recommended is 44x44px for touch targets
+ */
+function checkTouchTargetSize(node: SceneNode, violations: LintViolation[]): void {
+  // Check if node appears interactive (button, input, etc.)
+  const interactiveNames = ["button", "btn", "input", "link", "toggle", "switch", "checkbox", "radio", "tap", "click"];
+  const isInteractive = interactiveNames.some(name =>
+    node.name.toLowerCase().includes(name)
+  );
+
+  if (!isInteractive) return;
+
+  if ("width" in node && "height" in node) {
+    const width = node.width;
+    const height = node.height;
+
+    if (width < 44 || height < 44) {
+      violations.push({
+        nodeId: node.id,
+        nodeName: node.name,
+        rule: "TOUCH_TARGET_SIZE",
+        message: `Interactive element is ${Math.round(width)}x${Math.round(height)}px. Minimum recommended is 44x44px for touch targets`,
+        severity: "warning",
+      });
+    }
+  }
+}
+
+/**
+ * Checks alignment consistency of children
+ * Children should align to a consistent grid
+ */
+function checkAlignmentConsistency(node: SceneNode, violations: LintViolation[]): void {
+  if (node.type !== "FRAME") return;
+
+  const frame = node as FrameNode;
+  if (!("children" in frame) || frame.children.length <= 1) return;
+
+  // Check if children have consistent x positions (for non-auto-layout frames)
+  if (frame.layoutMode === "NONE") {
+    const xPositions = new Set<number>();
+    frame.children.forEach(child => {
+      if ("x" in child) xPositions.add(Math.round(child.x));
+    });
+
+    if (xPositions.size > 3) {
+      violations.push({
+        nodeId: node.id,
+        nodeName: node.name,
+        rule: "ALIGNMENT_CONSISTENCY",
+        message: `Children have ${xPositions.size} different X alignments. Consider using Auto Layout for consistent alignment`,
+        severity: "warning",
+      });
+    }
+  }
+}
+
+/**
+ * Checks proximity grouping - related items should be closer together
+ * This is a simplified check that looks for large gaps between siblings
+ */
+function checkProximityGrouping(node: SceneNode, violations: LintViolation[]): void {
+  if (node.type !== "FRAME") return;
+
+  const frame = node as FrameNode;
+  if (frame.layoutMode === "NONE" || !("children" in frame)) return;
+
+  // Check for very large spacing that might indicate improper grouping
+  if (frame.itemSpacing > 64) {
+    violations.push({
+      nodeId: node.id,
+      nodeName: node.name,
+      rule: "PROXIMITY_GROUPING",
+      message: `Large spacing (${frame.itemSpacing}px) between items. Consider grouping related items closer together`,
+      severity: "warning",
+    });
+  }
+}
+
+/**
+ * Checks text contrast ratio
+ * This is a simplified check based on text color brightness
+ */
+function checkContrastRatio(node: SceneNode, violations: LintViolation[]): void {
+  if (node.type !== "TEXT") return;
+
+  const textNode = node as TextNode;
+  const fills = textNode.fills as readonly Paint[];
+
+  if (!fills || fills.length === 0) return;
+
+  const fill = fills[0];
+  if (fill.type !== "SOLID") return;
+
+  // Calculate relative luminance
+  const r = fill.color.r;
+  const g = fill.color.g;
+  const b = fill.color.b;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+  // Very light colors on presumably light backgrounds
+  if (luminance > 0.85) {
+    violations.push({
+      nodeId: node.id,
+      nodeName: node.name,
+      rule: "CONTRAST_RATIO",
+      message: `Text color may have low contrast (luminance: ${Math.round(luminance * 100)}%). Consider using darker text`,
+      severity: "warning",
+    });
+  }
 }
 
 /**
@@ -259,8 +449,12 @@ async function handleLintLayout(
   const node = await getNodeOrThrow(nodeId);
   const violations: LintViolation[] = [];
 
+  let checkedNodes = 0;
+
   // Helper to check a single node
   function checkNode(n: SceneNode, isRoot: boolean): void {
+    checkedNodes++;
+
     // FILL_REQUIRED_ON_ROOT - Root frame must have a fill
     if (isRoot && rules.includes("FILL_REQUIRED_ON_ROOT")) {
       if ("fills" in n) {
@@ -274,6 +468,31 @@ async function handleLintLayout(
           });
         }
       }
+    }
+
+    // New Layout Intelligence rules (called before frame check as they handle their own type checks)
+    if (rules.includes("VISUAL_HIERARCHY")) {
+      checkVisualHierarchy(n, violations);
+    }
+
+    if (rules.includes("CONSISTENT_SPACING")) {
+      checkConsistentSpacing(n, violations);
+    }
+
+    if (rules.includes("TOUCH_TARGET_SIZE")) {
+      checkTouchTargetSize(n, violations);
+    }
+
+    if (rules.includes("ALIGNMENT_CONSISTENCY")) {
+      checkAlignmentConsistency(n, violations);
+    }
+
+    if (rules.includes("PROXIMITY_GROUPING")) {
+      checkProximityGrouping(n, violations);
+    }
+
+    if (rules.includes("CONTRAST_RATIO")) {
+      checkContrastRatio(n, violations);
     }
 
     // Only check frames for layout rules
@@ -375,6 +594,7 @@ async function handleLintLayout(
   return {
     passed: violations.length === 0,
     violations,
+    checkedNodes,
   };
 }
 
