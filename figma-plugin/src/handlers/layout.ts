@@ -10,7 +10,6 @@ import {
   type AutoLayoutConfig,
   type RGBColor,
   // Node helpers
-  getNode,
   getNodeOrThrow,
   canHaveChildren,
   // Paint helpers
@@ -203,10 +202,7 @@ async function handleReorderChildren(params: Record<string, unknown>): Promise<{
     throw new Error(`Parent ${parentId} cannot have children`);
   }
 
-  const child = await getNode(childId);
-  if (!child) {
-    throw new Error(`Child ${childId} not found`);
-  }
+  const child = await getNodeOrThrow(childId);
 
   const clampedIndex = Math.max(0, Math.min(newIndex, parent.children.length - 1));
   parent.insertChild(clampedIndex, child);
