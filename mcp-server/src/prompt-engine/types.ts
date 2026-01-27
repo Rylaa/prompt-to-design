@@ -69,7 +69,7 @@ export interface StyleSpec {
 
 export interface ContextSpec {
   deviceType?: "mobile" | "tablet" | "desktop";
-  screenType?: "landing" | "dashboard" | "form" | "profile" | "settings";
+  screenType?: "landing" | "dashboard" | "form" | "profile" | "settings" | "list" | "detail" | "checkout";
   industry?: string;
 }
 
