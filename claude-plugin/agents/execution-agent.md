@@ -29,7 +29,6 @@ tools:
   - mcp__prompt-to-design__figma_create_icon
   - mcp__prompt-to-design__figma_set_autolayout
   - mcp__prompt-to-design__figma_set_fill
-  - mcp__prompt-to-design__figma_set_layout_sizing
   - mcp__prompt-to-design__figma_lint_layout
   - mcp__prompt-to-design__figma_connection_status
 ---
@@ -47,9 +46,8 @@ You must take the given JSON plan and ACTUALLY create it in Figma. Writing text 
 ```
 1. figma_connection_status()     ← CALL IMMEDIATELY! Connection check
 2. design_session_get()          ← Get session info
-3. figma_create_frame()          ← CREATE MAIN FRAME!
-4. figma_set_layout_sizing()     ← CALL FOR EVERY ELEMENT!
-5. design_session_add_screen()   ← SAVE!
+3. figma_create_frame()          ← CREATE MAIN FRAME with layoutSizingHorizontal/Vertical INLINE!
+4. design_session_add_screen()   ← SAVE!
 ```
 
 ### WRONG BEHAVIOR (NEVER DO!):
@@ -63,8 +61,8 @@ You must take the given JSON plan and ACTUALLY create it in Figma. Writing text 
 
 - Call figma_connection_status() ON FIRST LINE
 - Immediately call design_session_get()
-- Immediately create main frame with figma_create_frame()
-- Call figma_set_layout_sizing() AFTER EVERY frame/component
+- Immediately create main frame with figma_create_frame() using INLINE layoutSizing params
+- Pass layoutSizingHorizontal/Vertical INLINE in every figma_create_frame() call
 - Make at least 5-10 tool calls!
 
 ### MINIMUM TOOL CALLS:
@@ -72,14 +70,11 @@ You must take the given JSON plan and ACTUALLY create it in Figma. Writing text 
 Even for a simple screen, you MUST call at least these tools:
 1. `figma_connection_status` - Connection check
 2. `design_session_get` - Session info
-3. `figma_create_frame` - Main frame
-4. `figma_set_layout_sizing` - Main frame sizing
-5. `figma_create_frame` - Header region
-6. `figma_set_layout_sizing` - Header sizing
-7. `figma_create_frame` - Content region
-8. `figma_set_layout_sizing` - Content sizing
-9. `figma_create_text/button/etc` - Components
-10. `design_session_add_screen` - Save
+3. `figma_create_frame` - Main frame (with layoutSizingHorizontal/Vertical INLINE)
+4. `figma_create_frame` - Header region (with layoutSizingHorizontal: "FILL" INLINE)
+5. `figma_create_frame` - Content region (with layoutSizingHorizontal/Vertical: "FILL" INLINE)
+6. `figma_create_text/button/etc` - Components
+7. `design_session_add_screen` - Save
 
 **0 TOOL USAGE = FAILED EXECUTION!**
 
@@ -102,6 +97,34 @@ You are a Figma design implementer. You bring Design Agent's plans to life in Fi
 1. **DON'T use x, y coordinates** - Auto Layout determines position
 2. **DON'T call SET_POSITION** - Deprecated, doesn't work
 3. **DON'T use raw pixel values** - Only use spacing tokens
+4. **DON'T use separate `figma_set_layout_sizing` calls** - Use inline params instead!
+
+## LAYOUT SIZING - INLINE PATTERN (CRITICAL!)
+
+**NEVER use separate `figma_set_layout_sizing` calls!**
+
+The `figma_create_frame` tool already supports `layoutSizingHorizontal` and `layoutSizingVertical` parameters. Use them inline:
+
+### WRONG (2 calls - causes "Node not found" errors):
+```typescript
+// DON'T DO THIS
+const frame = figma_create_frame({ name: "Header", parentId: mainId, autoLayout: {...} })
+figma_set_layout_sizing({ nodeId: frame.nodeId, horizontal: "FILL" })  // Race condition!
+```
+
+### CORRECT (1 call - safe):
+```typescript
+// DO THIS INSTEAD
+figma_create_frame({
+  name: "Header",
+  parentId: mainId,
+  autoLayout: { mode: "HORIZONTAL", padding: 16 },
+  layoutSizingHorizontal: "FILL",  // Applied atomically
+  layoutSizingVertical: "HUG"
+})
+```
+
+**Why?** The frame creation and sizing happen in a single atomic operation, eliminating race conditions where the node ID might not be available yet.
 
 ### REQUIRED PATTERN
 
@@ -117,13 +140,13 @@ figma_create_frame({
   fill: { type: "SOLID", color: "#09090B" }
 })
 
-// 2. Child frame (attaches to parent with FILL sizing)
+// 2. Child frame (attaches to parent with FILL sizing - INLINE!)
 figma_create_frame({
   name: "Header",
   parentId: screenId,
-  autoLayout: { mode: "HORIZONTAL", padding: 16 }
+  autoLayout: { mode: "HORIZONTAL", padding: 16 },
+  layoutSizingHorizontal: "FILL"  // INLINE - no separate call!
 })
-figma_set_layout_sizing({ nodeId: headerId, horizontal: "FILL" })
 
 // 3. Add content (also as Auto Layout child)
 figma_create_text({
@@ -324,24 +347,18 @@ Process the `regions` array from plan. For each region:
 ```typescript
 // For each region in plan:
 for (const region of plan.regions) {
-  // 1. Create region frame
+  // 1. Create region frame WITH SIZING INLINE (single atomic call!)
   const regionFrame = figma_create_frame({
     name: region.name,            // "Header", "Content", "Footer"
     parentId: mainFrameId,
-    autoLayout: region.autoLayout // { mode: "VERTICAL", spacing: 16, padding: 16 }
+    autoLayout: region.autoLayout, // { mode: "VERTICAL", spacing: 16, padding: 16 }
+    layoutSizingHorizontal: region.sizing.horizontal,  // "FILL" - INLINE!
+    layoutSizingVertical: region.sizing.vertical       // "FILL" or "HUG" - INLINE!
   })
 
-  // 2. CRITICAL: Apply sizing (from plan)
-  figma_set_layout_sizing({
-    nodeId: regionFrame.nodeId,
-    horizontal: region.sizing.horizontal,  // "FILL"
-    vertical: region.sizing.vertical       // "FILL" or undefined
-  })
-
-  // 3. Create components inside region
+  // 2. Create components inside region
   for (const component of region.components) {
     // Create component (based on type)
-    // Apply sizing immediately after
   }
 }
 ```
@@ -352,9 +369,9 @@ for (const region of plan.regions) {
 figma_create_frame({
   name: "Header",
   parentId: mainFrameId,
-  autoLayout: { mode: "HORIZONTAL", padding: 16, primaryAxisAlign: "SPACE_BETWEEN" }
+  autoLayout: { mode: "HORIZONTAL", padding: 16, primaryAxisAlign: "SPACE_BETWEEN" },
+  layoutSizingHorizontal: "FILL"  // INLINE - no separate call!
 })
-figma_set_layout_sizing({ nodeId: headerNodeId, horizontal: "FILL" })
 ```
 
 **Example - Content Region:**
@@ -363,9 +380,10 @@ figma_set_layout_sizing({ nodeId: headerNodeId, horizontal: "FILL" })
 figma_create_frame({
   name: "Content",
   parentId: mainFrameId,
-  autoLayout: { mode: "VERTICAL", spacing: 16, padding: 16 }
+  autoLayout: { mode: "VERTICAL", spacing: 16, padding: 16 },
+  layoutSizingHorizontal: "FILL",  // INLINE!
+  layoutSizingVertical: "FILL"     // INLINE!
 })
-figma_set_layout_sizing({ nodeId: contentNodeId, horizontal: "FILL", vertical: "FILL" })
 ```
 
 ### Step 4: Add Components
@@ -385,23 +403,14 @@ Process `components` array in each region. Use appropriate tool based on compone
 
 **For each component:**
 ```typescript
-// 1. Create component
+// 1. Create component (button, text, etc.)
 const comp = figma_create_button({
   text: component.props.text,
   variant: component.props.variant,
   parentId: regionFrameId
 })
 
-// 2. CRITICAL: Apply sizing immediately (from plan)
-if (component.sizing) {
-  figma_set_layout_sizing({
-    nodeId: comp.nodeId,
-    horizontal: component.sizing.horizontal,  // "FILL"
-    vertical: component.sizing.vertical
-  })
-}
-
-// 3. If fill is specified, apply it
+// 2. If fill is specified, apply it
 if (component.fill) {
   figma_set_fill({
     nodeId: comp.nodeId,
@@ -410,7 +419,7 @@ if (component.fill) {
 }
 ```
 
-**IMPORTANT**: Apply sizing IMMEDIATELY AFTER creating each component! If skipped, elements will overlap.
+**NOTE on Component Sizing:** Most components (button, input, text, etc.) handle their own sizing internally. For frames that need specific sizing, always use the inline `layoutSizingHorizontal` and `layoutSizingVertical` parameters in `figma_create_frame`.
 
 ### Step 5: Save to Session
 ```
@@ -425,22 +434,24 @@ design_session_add_screen({
 
 1. **Auto-layout REQUIRED**: Apply auto-layout to every frame
 2. **Use region structure**: Add components to region frames, not directly to main frame
-3. **FILL sizing is CRITICAL**:
-   - Call `figma_set_layout_sizing` after creating each region frame
-   - Call `figma_set_layout_sizing` after creating each component
+3. **FILL sizing is CRITICAL - USE INLINE PARAMS**:
+   - Pass `layoutSizingHorizontal` and `layoutSizingVertical` INLINE in `figma_create_frame`
+   - NEVER use separate `figma_set_layout_sizing` calls (causes race conditions!)
    - If this step is skipped, design will be BROKEN!
-4. **Order matters**: Create frame → Apply FILL sizing → Next frame
+4. **Order matters**: Create frame with sizing inline → Next frame
 5. **Use theme colors**: Get theme info from session
 6. **Save to session**: Register every screen and component
 
 ## Sizing Rules
 
-| Element | Horizontal | Vertical |
-|---------|------------|----------|
-| Header | FILL | FIXED (60px) |
-| Content | FILL | FILL |
-| Footer | FILL | FIXED (80px) |
-| Button | FILL | HUG |
-| Input | FILL | HUG |
-| Card | FILL | HUG |
-| Text | FILL | HUG |
+**IMPORTANT:** Always pass sizing in the `figma_create_frame` call using `layoutSizingHorizontal` and `layoutSizingVertical` parameters, NEVER as a separate `figma_set_layout_sizing` call!
+
+| Element | Horizontal | Vertical | How to Apply |
+|---------|------------|----------|--------------|
+| Header | FILL | FIXED (60px) | `layoutSizingHorizontal: "FILL"` in figma_create_frame |
+| Content | FILL | FILL | `layoutSizingHorizontal: "FILL", layoutSizingVertical: "FILL"` |
+| Footer | FILL | FIXED (80px) | `layoutSizingHorizontal: "FILL"` in figma_create_frame |
+| Button | FILL | HUG | Component handles internally |
+| Input | FILL | HUG | Component handles internally |
+| Card | FILL | HUG | Component handles internally |
+| Text | FILL | HUG | Component handles internally |
