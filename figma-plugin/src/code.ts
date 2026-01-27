@@ -15,6 +15,46 @@ import { createLiquidGlassComponent, listLiquidGlassComponents } from "./compone
 import { listComponents, ComponentLibrary } from "./components";
 import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "./icons/lucide-svgs";
 
+// Handler utilities
+import {
+  // Types
+  type Command,
+  type RGBColor,
+  type GradientStop,
+  type GradientConfig,
+  type FillConfig,
+  type ShadowConfig,
+  type BlurConfig,
+  type EffectConfig,
+  type AutoLayoutConfig,
+  type TextStyleConfig,
+  type StrokeConfig,
+  type FinalizeOptions,
+  type CommandHandler,
+  type NoParamsHandler,
+  // Node helpers
+  nodeRegistry,
+  registerNode,
+  getNode,
+  getNodeOrThrow,
+  attachToParentOrPage,
+  setPosition,
+  finalizeNode,
+  // Paint helpers
+  hexToRgb,
+  parseColor,
+  createSolidPaint,
+  createStrokePaint,
+  createGradientPaint,
+  createFill,
+  createEffect,
+  applyAutoLayout,
+  applyStroke,
+  // Font helpers
+  getFontStyle,
+  loadFont,
+} from "./handlers/utils";
+
 // Core layout system
 import {
   createAutoLayout,
@@ -37,57 +77,8 @@ import type { RadiusKey } from "./tokens/spacing";
 figma.showUI(__html__, { width: 300, height: 400 });
 
 // ============================================================================
-// Tip Tanımlamaları
+// FigJam-specific Types (not in shared utils)
 // ============================================================================
-
-interface Command {
-  type: "COMMAND";
-  id: string;
-  action: string;
-  params: Record<string, unknown>;
-}
-
-interface RGBColor {
-  r: number;
-  g: number;
-  b: number;
-  a?: number;
-}
-
-interface GradientStop {
-  position: number;
-  color: string | RGBColor;
-}
-
-interface GradientConfig {
-  type: "LINEAR" | "RADIAL" | "ANGULAR" | "DIAMOND";
-  stops: GradientStop[];
-  angle?: number;
-}
-
-interface FillConfig {
-  type: "SOLID" | "GRADIENT";
-  color?: string | RGBColor;
-  opacity?: number;
-  gradient?: GradientConfig;
-}
-
-interface ShadowConfig {
-  type: "DROP_SHADOW" | "INNER_SHADOW";
-  color?: string | RGBColor;
-  offsetX?: number;
-  offsetY?: number;
-  blur?: number;
-  spread?: number;
-  opacity?: number;
-}
-
-interface BlurConfig {
-  type: "LAYER_BLUR" | "BACKGROUND_BLUR";
-  radius: number;
-}
-
-type EffectConfig = ShadowConfig | BlurConfig;
 
 // FigJam connector magnet positions
 type ConnectorMagnet = "AUTO" | "TOP" | "BOTTOM" | "LEFT" | "RIGHT" | "CENTER";
@@ -97,46 +88,6 @@ type ConnectorLineType = "STRAIGHT" | "ELBOWED" | "CURVED";
 
 // FigJam code block languages
 type CodeBlockLanguage = "TYPESCRIPT" | "JAVASCRIPT" | "PYTHON" | "RUBY" | "CSS" | "HTML" | "JSON" | "CPP" | "GO" | "BASH" | "SWIFT" | "KOTLIN" | "RUST" | "PLAINTEXT" | "GRAPHQL" | "SQL" | "DART";
-
-interface AutoLayoutConfig {
-  mode: "HORIZONTAL" | "VERTICAL";
-  spacing?: number;
-  counterAxisSpacing?: number;
-  paddingTop?: number;
-  paddingRight?: number;
-  paddingBottom?: number;
-  paddingLeft?: number;
-  padding?: number;
-  primaryAxisAlign?: "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
-  counterAxisAlign?: "MIN" | "CENTER" | "MAX" | "BASELINE";
-  wrap?: boolean;
-  strokesIncludedInLayout?: boolean;
-}
-
-interface TextStyleConfig {
-  fontFamily?: string;
-  fontSize?: number;
-  fontWeight?: number;
-  lineHeight?: number | string;
-  letterSpacing?: number;
-  textAlign?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
-}
-
-interface StrokeConfig {
-  color: string | RGBColor;
-  weight?: number;
-  align?: "INSIDE" | "OUTSIDE" | "CENTER";
-}
-
-// ============================================================================
-// Node Registry - Oluşturulan node'ları takip et
-// ============================================================================
-
-const nodeRegistry: Map<string, SceneNode> = new Map();
-
-function registerNode(node: SceneNode): void {
-  nodeRegistry.set(node.id, node);
-}
 
 // ============================================================================
 // Component Library - Component'leri isimle sakla ve yönet
@@ -178,247 +129,8 @@ const DEBUG_COLORS = {
   sizingFixed: { r: 0.8, g: 0.8, b: 0.2, a: 0.3 },// Yellow for FIXED sizing
 };
 
-async function getNode(nodeId: string): Promise<SceneNode | null> {
-  // Önce registry'den bak
-  if (nodeRegistry.has(nodeId)) {
-    return nodeRegistry.get(nodeId) || null;
-  }
-  // Sonra async olarak Figma'dan al
-  const node = await figma.getNodeByIdAsync(nodeId);
-  if (node && "type" in node) {
-    return node as SceneNode;
-  }
-  return null;
-}
-
-/**
- * Node'u ID ile al, bulunamazsa hata fırlat
- * @param nodeId - Figma node ID
- * @param errorMessage - Özel hata mesajı (opsiyonel)
- */
-async function getNodeOrThrow(nodeId: string, errorMessage?: string): Promise<SceneNode> {
-  const node = await getNode(nodeId);
-  if (!node) {
-    throw new Error(errorMessage || `Node not found: ${nodeId}`);
-  }
-  return node;
-}
-
-/**
- * Node'u parent'a veya sayfaya ekle
- * @param node - Eklenecek node
- * @param parentId - Parent frame ID (opsiyonel, yoksa sayfaya eklenir)
- */
-async function attachToParentOrPage(node: SceneNode, parentId?: string): Promise<void> {
-  if (parentId) {
-    const parent = await getNode(parentId);
-    if (parent && "appendChild" in parent) {
-      (parent as FrameNode).appendChild(node);
-    }
-  } else {
-    figma.currentPage.appendChild(node);
-  }
-}
-
-/**
- * Node pozisyonunu ayarla
- * @param node - Pozisyonu ayarlanacak node
- * @param x - X koordinatı (opsiyonel)
- * @param y - Y koordinatı (opsiyonel)
- */
-function setPosition(node: SceneNode, x?: number, y?: number): void {
-  if (x !== undefined) node.x = x;
-  if (y !== undefined) node.y = y;
-}
-
-/**
- * Node'u finalize et: parent'a ekle ve pozisyonu ayarla
- * Yaygın kullanılan pattern'i tek bir çağrıda birleştirir
- */
-interface FinalizeOptions {
-  parentId?: string;
-  x?: number;
-  y?: number;
-}
-
-async function finalizeNode(node: SceneNode, options: FinalizeOptions): Promise<void> {
-  await attachToParentOrPage(node, options.parentId);
-  setPosition(node, options.x, options.y);
-}
-
 // ============================================================================
-// Yardımcı Fonksiyonlar
-// ============================================================================
-
-function hexToRgb(hex: string): RGB {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (result) {
-    return {
-      r: parseInt(result[1], 16) / 255,
-      g: parseInt(result[2], 16) / 255,
-      b: parseInt(result[3], 16) / 255,
-    };
-  }
-  // 3 karakter hex desteği
-  const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
-  if (shortResult) {
-    return {
-      r: parseInt(shortResult[1] + shortResult[1], 16) / 255,
-      g: parseInt(shortResult[2] + shortResult[2], 16) / 255,
-      b: parseInt(shortResult[3] + shortResult[3], 16) / 255,
-    };
-  }
-  return { r: 0, g: 0, b: 0 };
-}
-
-function parseColor(color: string | RGBColor): RGB {
-  if (typeof color === "string") {
-    return hexToRgb(color);
-  }
-  return { r: color.r, g: color.g, b: color.b };
-}
-
-function createSolidPaint(color: string | RGBColor, opacity?: number): SolidPaint {
-  const rgb = parseColor(color);
-  return {
-    type: "SOLID",
-    color: rgb,
-    opacity: opacity !== undefined ? opacity : 1,
-  };
-}
-
-function createStrokePaint(config: StrokeConfig): SolidPaint {
-  const rgb = parseColor(config.color);
-  return {
-    type: "SOLID",
-    color: rgb,
-    opacity: 1,
-  };
-}
-
-function createGradientPaint(config: GradientConfig): GradientPaint {
-  const stops: ColorStop[] = config.stops.map((stop) => ({
-    position: stop.position,
-    color: { ...parseColor(stop.color), a: 1 },
-  }));
-
-  const angle = config.angle || 0;
-  const radians = (angle * Math.PI) / 180;
-
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-
-  return {
-    type: "GRADIENT_LINEAR",
-    gradientTransform: [
-      [cos, sin, 0.5 - cos * 0.5 - sin * 0.5],
-      [-sin, cos, 0.5 + sin * 0.5 - cos * 0.5],
-    ],
-    gradientStops: stops,
-  };
-}
-
-function createFill(config: FillConfig): Paint {
-  if (config.type === "SOLID" && config.color) {
-    return createSolidPaint(config.color, config.opacity);
-  }
-  if (config.type === "GRADIENT" && config.gradient) {
-    return createGradientPaint(config.gradient);
-  }
-  return createSolidPaint("#000000");
-}
-
-function createEffect(config: EffectConfig): Effect {
-  if (config.type === "DROP_SHADOW" || config.type === "INNER_SHADOW") {
-    const shadow = config as ShadowConfig;
-    const color = shadow.color ? parseColor(shadow.color) : { r: 0, g: 0, b: 0 };
-    return {
-      type: shadow.type,
-      color: { ...color, a: shadow.opacity !== undefined ? shadow.opacity : 0.25 },
-      offset: {
-        x: shadow.offsetX !== undefined ? shadow.offsetX : 0,
-        y: shadow.offsetY !== undefined ? shadow.offsetY : 4
-      },
-      radius: shadow.blur !== undefined ? shadow.blur : 8,
-      spread: shadow.spread !== undefined ? shadow.spread : 0,
-      visible: true,
-      blendMode: "NORMAL",
-    };
-  }
-
-  const blur = config as BlurConfig;
-  return {
-    type: blur.type,
-    radius: blur.radius,
-    visible: true,
-  } as BlurEffect;
-}
-
-function applyAutoLayout(node: FrameNode, config: AutoLayoutConfig): void {
-  node.layoutMode = config.mode;
-  node.itemSpacing = config.spacing !== undefined ? config.spacing : 0;
-
-  const padding = config.padding !== undefined ? config.padding : 0;
-  node.paddingTop = config.paddingTop !== undefined ? config.paddingTop : padding;
-  node.paddingRight = config.paddingRight !== undefined ? config.paddingRight : padding;
-  node.paddingBottom = config.paddingBottom !== undefined ? config.paddingBottom : padding;
-  node.paddingLeft = config.paddingLeft !== undefined ? config.paddingLeft : padding;
-
-  node.primaryAxisAlignItems = config.primaryAxisAlign || "MIN";
-  node.counterAxisAlignItems = config.counterAxisAlign || "CENTER";
-
-  if (config.wrap) {
-    node.layoutWrap = "WRAP";
-    // counterAxisSpacing only applies when wrap is enabled
-    if (config.counterAxisSpacing !== undefined) {
-      node.counterAxisSpacing = config.counterAxisSpacing;
-    }
-  }
-
-  // strokesIncludedInLayout - controls if stroke weight is included in layout calculations
-  if (config.strokesIncludedInLayout !== undefined) {
-    node.strokesIncludedInLayout = config.strokesIncludedInLayout;
-  }
-}
-
-function applyStroke(node: GeometryMixin & MinimalStrokesMixin, config: StrokeConfig): void {
-  node.strokes = [createSolidPaint(config.color)];
-  node.strokeWeight = config.weight !== undefined ? config.weight : 1;
-  if ("strokeAlign" in node && config.align) {
-    (node as FrameNode).strokeAlign = config.align;
-  }
-}
-
-async function loadFont(fontFamily: string, fontWeight: number): Promise<FontName> {
-  const fontName: FontName = {
-    family: fontFamily,
-    style: getFontStyle(fontWeight),
-  };
-
-  try {
-    await figma.loadFontAsync(fontName);
-    return fontName;
-  } catch {
-    const fallback: FontName = { family: "Inter", style: "Regular" };
-    await figma.loadFontAsync(fallback);
-    return fallback;
-  }
-}
-
-function getFontStyle(weight: number): string {
-  if (weight <= 100) return "Thin";
-  if (weight <= 200) return "ExtraLight";
-  if (weight <= 300) return "Light";
-  if (weight <= 400) return "Regular";
-  if (weight <= 500) return "Medium";
-  if (weight <= 600) return "Semi Bold";
-  if (weight <= 700) return "Bold";
-  if (weight <= 800) return "ExtraBold";
-  return "Black";
-}
-
-// ============================================================================
-// Frame/Shape oluşturma yardımcıları
+// Frame/Shape Creation Helpers
 // ============================================================================
 
 function applyCommonFrameProps(frame: FrameNode, params: Record<string, unknown>): void {
@@ -5395,10 +5107,6 @@ async function handleGetDebugInfo(params: Record<string, unknown>): Promise<{
 // ============================================================================
 // Komut Yönlendirici
 // ============================================================================
-
-// Handler tipleri
-type CommandHandler = (params: Record<string, unknown>) => Promise<Record<string, unknown>> | Record<string, unknown>;
-type NoParamsHandler = () => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 // Komut handler map'i - switch yerine daha temiz ve genişletilebilir
 const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
