@@ -132,6 +132,8 @@ import {
   handleLintLayout,
   // Smart Layout
   handleSmartLayout,
+  // Variant Generator
+  handleGenerateVariants,
   // Styling
   handleSetFill,
   handleSetEffects,
@@ -423,6 +425,9 @@ const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
 
   // === Smart Layout ===
   SMART_LAYOUT: handleSmartLayout,
+
+  // === Variant Generator ===
+  GENERATE_VARIANTS: handleGenerateVariants,
 
   // === Visual Debug Mode ===
   TOGGLE_DEBUG_MODE: handleToggleDebugMode,

@@ -32,6 +32,7 @@ import { registerLinterTools } from "./linter.js";
 import { registerSmartLayoutTools } from "./smart-layout.js";
 import { registerComponentRegistryTools } from "./component-registry.js";
 import { registerDebugTools } from "./debug.js";
+import { registerVariantGeneratorTools } from "./variant-generator.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -62,6 +63,7 @@ export function registerAllTools(server: McpServer): void {
   // Component system
   registerComponentLibraryTools(server);
   registerStylesVariablesTools(server);
+  registerVariantGeneratorTools(server);
 
   // Component Registry (Slot Pattern)
   registerComponentRegistryTools(server);
