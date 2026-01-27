@@ -1383,6 +1383,57 @@ export const SmartLayoutResultSchema = z.object({
 export type SmartLayoutResult = z.infer<typeof SmartLayoutResultSchema>;
 
 // ============================================================================
+// Auto Variant Generation Schemas
+// ============================================================================
+
+export const GenerateVariantsInputSchema = z.object({
+  nodeId: z.string().describe("Component node ID to generate variants for"),
+  variantTypes: z
+    .array(
+      z.enum([
+        "STATE", // hover, active, disabled, focused
+        "SIZE", // sm, md, lg, xl
+        "THEME", // light, dark
+        "DENSITY", // compact, comfortable, spacious
+      ])
+    )
+    .optional()
+    .default(["STATE"])
+    .describe("Types of variants to generate"),
+  options: z
+    .object({
+      includeHover: z.boolean().optional().default(true),
+      includeDisabled: z.boolean().optional().default(true),
+      includeFocused: z.boolean().optional().default(false),
+      sizeScale: z
+        .array(z.enum(["sm", "md", "lg", "xl"]))
+        .optional()
+        .default(["sm", "md", "lg"]),
+      createComponentSet: z.boolean().optional().default(true).describe("Group variants into ComponentSet"),
+    })
+    .optional(),
+}).strict();
+
+export type GenerateVariantsInput = z.infer<typeof GenerateVariantsInputSchema>;
+
+export const GeneratedVariantSchema = z.object({
+  nodeId: z.string(),
+  name: z.string(),
+  variantProperties: z.record(z.string()),
+});
+
+export type GeneratedVariant = z.infer<typeof GeneratedVariantSchema>;
+
+export const VariantGenerationResultSchema = z.object({
+  success: z.boolean(),
+  componentSetId: z.string().optional(),
+  variants: z.array(GeneratedVariantSchema),
+  error: z.string().optional(),
+});
+
+export type VariantGenerationResult = z.infer<typeof VariantGenerationResultSchema>;
+
+// ============================================================================
 // Visual Debug Mode Schemas
 // ============================================================================
 
