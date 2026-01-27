@@ -1,1 +1,1 @@
-/Users/yusufdemirkoparan/Projects/prompt-to-design/claude-plugin/agents/design-agent.md
+../../claude-plugin/agents/design-agent.md
