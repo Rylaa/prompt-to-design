@@ -501,9 +501,9 @@ const statCard = figma_create_frame({
   parentId: rowFrame.nodeId,
   fill: { type: "SOLID", color: "#18181B" },
   cornerRadius: 12,
-  autoLayout: { mode: "VERTICAL", spacing: 4, padding: 16 }
+  autoLayout: { mode: "VERTICAL", spacing: 4, padding: 16 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: statCard.nodeId, horizontal: "FILL" })
 
 // Label (small, muted)
 const label = figma_create_text({
@@ -542,9 +542,9 @@ const kpiCard = figma_create_kpi_card({
   changeType: "positive",  // positive=green, negative=red, neutral=gray
   icon: "dollar-sign",     // Lucide icon (optional)
   theme: "dark",
-  parentId: rowFrame.nodeId
+  parentId: rowFrame.nodeId,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: kpiCard.nodeId, horizontal: "FILL" })
 ```
 
 **KPI Card features:**
@@ -573,9 +573,9 @@ const heroCard = figma_create_frame({
     }
   },
   cornerRadius: 16,
-  autoLayout: { mode: "VERTICAL", spacing: 8, padding: 24 }
+  autoLayout: { mode: "VERTICAL", spacing: 8, padding: 24 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: heroCard.nodeId, horizontal: "FILL" })
 
 // Title
 figma_create_text({
@@ -600,9 +600,9 @@ figma_create_text({
 const row1 = figma_create_frame({
   name: "StatsRow1",
   parentId: content.nodeId,
-  autoLayout: { mode: "HORIZONTAL", spacing: 12 }
+  autoLayout: { mode: "HORIZONTAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: row1.nodeId, horizontal: "FILL" })
 
 // Add 2 stat cards to this row, each will FILL
 // ... stat card 1 ...
@@ -611,9 +611,9 @@ figma_set_layout_sizing({ nodeId: row1.nodeId, horizontal: "FILL" })
 const row2 = figma_create_frame({
   name: "StatsRow2",
   parentId: content.nodeId,
-  autoLayout: { mode: "HORIZONTAL", spacing: 12 }
+  autoLayout: { mode: "HORIZONTAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: row2.nodeId, horizontal: "FILL" })
 // ... stat card 3 ...
 // ... stat card 4 ...
 ```
