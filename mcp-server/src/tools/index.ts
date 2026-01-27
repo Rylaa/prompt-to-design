@@ -29,6 +29,7 @@ import { registerThemeTools } from "./theme.js";
 import { registerConnectionTools } from "./connection.js";
 import { registerSessionTools } from "./session.js";
 import { registerLinterTools } from "./linter.js";
+import { registerSmartLayoutTools } from "./smart-layout.js";
 import { registerComponentRegistryTools } from "./component-registry.js";
 import { registerDebugTools } from "./debug.js";
 
@@ -54,6 +55,7 @@ export function registerAllTools(server: McpServer): void {
   registerManipulationTools(server);
   registerQueryTools(server);
   registerLinterTools(server);
+  registerSmartLayoutTools(server);
   registerMaskTools(server);
   registerBooleanTools(server);
 
