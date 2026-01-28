@@ -54,9 +54,9 @@ const loadingBtn = figma_create_frame({
     counterAxisAlign: "CENTER"
   },
   fill: { type: "SOLID", color: "#3B82F6" },
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: loadingBtn.nodeId, horizontal: "FILL" })
 
 // Mini spinner
 figma_create_frame({
@@ -89,9 +89,10 @@ const emptyState = figma_create_frame({
     padding: 32,
     primaryAxisAlign: "CENTER",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL",
+  layoutSizingVertical: "FILL"
 })
-figma_set_layout_sizing({ nodeId: emptyState.nodeId, horizontal: "FILL", vertical: "FILL" })
 
 // Illustration placeholder
 const illustration = figma_create_frame({
@@ -144,9 +145,10 @@ const errorState = figma_create_frame({
     padding: 32,
     primaryAxisAlign: "CENTER",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL",
+  layoutSizingVertical: "FILL"
 })
-figma_set_layout_sizing({ nodeId: errorState.nodeId, horizontal: "FILL", vertical: "FILL" })
 
 // Error icon
 const errorIcon = figma_create_frame({
@@ -200,9 +202,9 @@ const skeletonCard = figma_create_frame({
   parentId: content.nodeId,
   autoLayout: { mode: "VERTICAL", spacing: 12, padding: 16 },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 12
+  cornerRadius: 12,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: skeletonCard.nodeId, horizontal: "FILL" })
 
 // Skeleton line - title
 figma_create_frame({
@@ -228,9 +230,9 @@ figma_create_frame({
   parentId: skeletonCard.nodeId,
   height: 100,
   fill: { type: "SOLID", color: "#27272A" },
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: "skeleton-block", horizontal: "FILL" })
 ```
 
 ---
@@ -261,13 +263,13 @@ figma_create_icon({
   parentId: toast.nodeId
 })
 
-figma_create_text({
+const toastText = figma_create_text({
   content: "Basariyla kaydedildi",
   parentId: toast.nodeId,
   style: { fontSize: 14, fontWeight: 500 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: toastText.nodeId, horizontal: "FILL" })
 
 figma_create_icon({
   name: "x",

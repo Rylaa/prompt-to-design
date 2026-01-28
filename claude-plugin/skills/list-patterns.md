@@ -19,17 +19,17 @@ const listItem = figma_create_frame({
     spacing: 12,
     counterAxisAlign: "CENTER"
   },
-  fill: { type: "SOLID", color: "#18181B" }
+  fill: { type: "SOLID", color: "#18181B" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: listItem.nodeId, horizontal: "FILL" })
 
-figma_create_text({
+const titleText = figma_create_text({
   content: "List Item Title",
   parentId: listItem.nodeId,
   style: { fontSize: 16, fontWeight: 500 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: titleText.nodeId, horizontal: "FILL" })
 
 figma_create_icon({
   name: "chevron-right",
@@ -54,9 +54,9 @@ const listItemIcon = figma_create_frame({
     spacing: 12,
     counterAxisAlign: "CENTER"
   },
-  fill: { type: "SOLID", color: "#18181B" }
+  fill: { type: "SOLID", color: "#18181B" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: listItemIcon.nodeId, horizontal: "FILL" })
 
 // Icon container
 const iconContainer = figma_create_frame({
@@ -80,13 +80,13 @@ figma_create_icon({
 })
 
 // Text
-figma_create_text({
+const settingsText = figma_create_text({
   content: "Ayarlar",
   parentId: listItemIcon.nodeId,
   style: { fontSize: 16, fontWeight: 500 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: settingsText.nodeId, horizontal: "FILL" })
 
 // Chevron
 figma_create_icon({
@@ -112,9 +112,9 @@ const listItemAvatar = figma_create_frame({
     spacing: 12,
     counterAxisAlign: "CENTER"
   },
-  fill: { type: "SOLID", color: "#18181B" }
+  fill: { type: "SOLID", color: "#18181B" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: listItemAvatar.nodeId, horizontal: "FILL" })
 
 // Avatar
 const avatar = figma_create_frame({
@@ -129,9 +129,9 @@ const avatar = figma_create_frame({
 const textGroup = figma_create_frame({
   name: "TextGroup",
   parentId: listItemAvatar.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 2 }
+  autoLayout: { mode: "VERTICAL", spacing: 2 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: textGroup.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "John Doe",
@@ -163,17 +163,17 @@ const listItemValue = figma_create_frame({
     spacing: 12,
     counterAxisAlign: "CENTER"
   },
-  fill: { type: "SOLID", color: "#18181B" }
+  fill: { type: "SOLID", color: "#18181B" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: listItemValue.nodeId, horizontal: "FILL" })
 
-figma_create_text({
+const labelText = figma_create_text({
   content: "Dil",
   parentId: listItemValue.nodeId,
   style: { fontSize: 16, fontWeight: 500 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: labelText.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "Turkce",
@@ -199,9 +199,9 @@ figma_create_icon({
 const section = figma_create_frame({
   name: "Section-Account",
   parentId: content.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 0 }
+  autoLayout: { mode: "VERTICAL", spacing: 0 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: section.nodeId, horizontal: "FILL" })
 
 // Section header
 figma_create_text({
@@ -217,9 +217,9 @@ const sectionCard = figma_create_frame({
   parentId: section.nodeId,
   autoLayout: { mode: "VERTICAL", spacing: 0 },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 12
+  cornerRadius: 12,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: sectionCard.nodeId, horizontal: "FILL" })
 
 // Items inside card
 // ... list items with dividers between them
@@ -234,9 +234,9 @@ const divider = figma_create_frame({
   name: "Divider",
   parentId: sectionCard.nodeId,
   height: 1,
-  fill: { type: "SOLID", color: "#27272A" }
+  fill: { type: "SOLID", color: "#27272A" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: divider.nodeId, horizontal: "FILL" })
 ```
 
 ---

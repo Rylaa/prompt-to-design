@@ -48,9 +48,10 @@ const content = figma_create_frame({
     padding: 24,
     primaryAxisAlign: "CENTER",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL",
+  layoutSizingVertical: "FILL"
 })
-figma_set_layout_sizing({ nodeId: content.nodeId, horizontal: "FILL", vertical: "FILL" })
 
 // Logo placeholder
 const logo = figma_create_frame({
@@ -81,31 +82,29 @@ figma_create_text({
 const inputGroup = figma_create_frame({
   name: "InputGroup",
   parentId: content.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 12 }
+  autoLayout: { mode: "VERTICAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: inputGroup.nodeId, horizontal: "FILL" })
 
 // Email Input
-const emailInput = figma_create_input({
+figma_create_input({
   placeholder: "Your email address",
   parentId: inputGroup.nodeId
 })
-figma_set_layout_sizing({ nodeId: emailInput.nodeId, horizontal: "FILL" })
 
 // Password Input
-const passwordInput = figma_create_input({
+figma_create_input({
   placeholder: "Your password",
   parentId: inputGroup.nodeId
 })
-figma_set_layout_sizing({ nodeId: passwordInput.nodeId, horizontal: "FILL" })
 
 // Login Button
-const loginBtn = figma_create_button({
+figma_create_button({
   text: "Sign In",
   variant: "primary",
+  fullWidth: true,
   parentId: content.nodeId
 })
-figma_set_layout_sizing({ nodeId: loginBtn.nodeId, horizontal: "FILL" })
 ```
 
 ---
@@ -151,9 +150,9 @@ const header = figma_create_frame({
     mode: "HORIZONTAL",
     padding: 16,
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: header.nodeId, horizontal: "FILL" })
 
 figma_create_icon({
   name: "arrow-left",
@@ -226,9 +225,9 @@ const avatarSection = figma_create_frame({
     spacing: 8,
     primaryAxisAlign: "CENTER",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: avatarSection.nodeId, horizontal: "FILL" })
 
 // Avatar circle
 const avatar = figma_create_frame({
@@ -261,9 +260,9 @@ figma_create_text({
 const statsRow = figma_create_frame({
   name: "StatsRow",
   parentId: content.nodeId,
-  autoLayout: { mode: "HORIZONTAL", spacing: 0 }
+  autoLayout: { mode: "HORIZONTAL", spacing: 0 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: statsRow.nodeId, horizontal: "FILL" })
 
 const createStatItem = (value, label) => {
   const item = figma_create_frame({
@@ -274,9 +273,9 @@ const createStatItem = (value, label) => {
       spacing: 4,
       primaryAxisAlign: "CENTER",
       counterAxisAlign: "CENTER"
-    }
+    },
+    layoutSizingHorizontal: "FILL"
   })
-  figma_set_layout_sizing({ nodeId: item.nodeId, horizontal: "FILL" })
 
   figma_create_text({
     content: value,
@@ -336,9 +335,9 @@ const toggleItem = figma_create_frame({
     counterAxisAlign: "CENTER"
   },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 12
+  cornerRadius: 12,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: toggleItem.nodeId, horizontal: "FILL" })
 
 // Label
 figma_create_text({
@@ -372,9 +371,9 @@ const createSection = (title) => {
   const section = figma_create_frame({
     name: `Section-${title}`,
     parentId: content.nodeId,
-    autoLayout: { mode: "VERTICAL", spacing: 8 }
+    autoLayout: { mode: "VERTICAL", spacing: 8 },
+    layoutSizingHorizontal: "FILL"
   })
-  figma_set_layout_sizing({ nodeId: section.nodeId, horizontal: "FILL" })
 
   return section
 }
@@ -436,9 +435,9 @@ const footer = figma_create_frame({
     padding: 24,
     primaryAxisAlign: "SPACE_BETWEEN",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: footer.nodeId, horizontal: "FILL" })
 
 // Skip button
 figma_create_button({

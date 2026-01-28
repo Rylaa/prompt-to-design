@@ -19,9 +19,9 @@ const navBar = figma_create_frame({
     padding: 16,
     primaryAxisAlign: "SPACE_BETWEEN",
     counterAxisAlign: "CENTER"
-  }
+  },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: navBar.nodeId, horizontal: "FILL" })
 
 // Left: Back button
 const backBtn = figma_create_frame({
@@ -64,17 +64,17 @@ figma_create_icon({
 const navBarLarge = figma_create_frame({
   name: "NavigationBarLarge",
   parentId: mainFrame.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 8, padding: 16 }
+  autoLayout: { mode: "VERTICAL", spacing: 8, padding: 16 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: navBarLarge.nodeId, horizontal: "FILL" })
 
 // Top row: back + actions
 const topRow = figma_create_frame({
   name: "TopRow",
   parentId: navBarLarge.nodeId,
-  autoLayout: { mode: "HORIZONTAL", primaryAxisAlign: "SPACE_BETWEEN" }
+  autoLayout: { mode: "HORIZONTAL", primaryAxisAlign: "SPACE_BETWEEN" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: topRow.nodeId, horizontal: "FILL" })
 
 // Large title
 figma_create_text({
@@ -103,9 +103,9 @@ const tabBar = figma_create_frame({
     paddingRight: 16,
     primaryAxisAlign: "SPACE_BETWEEN"
   },
-  fill: { type: "SOLID", color: "#18181B" }
+  fill: { type: "SOLID", color: "#18181B" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: tabBar.nodeId, horizontal: "FILL" })
 
 const tabs = [
   { icon: "home", label: "Ana Sayfa", active: true },
@@ -124,9 +124,9 @@ tabs.forEach(tab => {
       spacing: 4,
       primaryAxisAlign: "CENTER",
       counterAxisAlign: "CENTER"
-    }
+    },
+    layoutSizingHorizontal: "FILL"
   })
-  figma_set_layout_sizing({ nodeId: tabItem.nodeId, horizontal: "FILL" })
 
   figma_create_icon({
     name: tab.icon,
@@ -163,9 +163,9 @@ const sheet = figma_create_frame({
   parentId: mainFrame.nodeId,
   autoLayout: { mode: "VERTICAL", spacing: 16, padding: 24 },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 24  // sadece ust koseler
+  cornerRadius: 24,  // sadece ust koseler
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: sheet.nodeId, horizontal: "FILL" })
 figma_set_position({ nodeId: sheet.nodeId, x: 0, y: 500 })  // alttan yukari
 
 // Handle bar
@@ -233,9 +233,9 @@ figma_create_text({
 const actions = figma_create_frame({
   name: "ModalActions",
   parentId: modal.nodeId,
-  autoLayout: { mode: "HORIZONTAL", spacing: 12 }
+  autoLayout: { mode: "HORIZONTAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: actions.nodeId, horizontal: "FILL" })
 
 figma_create_button({
   text: "Iptal",

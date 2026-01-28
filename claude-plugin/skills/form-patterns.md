@@ -23,9 +23,9 @@ const createInputGroup = (label, placeholder, error = null) => {
   const group = figma_create_frame({
     name: `InputGroup-${label}`,
     parentId: form.nodeId,
-    autoLayout: { mode: "VERTICAL", spacing: 6 }
+    autoLayout: { mode: "VERTICAL", spacing: 6 },
+    layoutSizingHorizontal: "FILL"
   })
-  figma_set_layout_sizing({ nodeId: group.nodeId, horizontal: "FILL" })
 
   // Label
   figma_create_text({
@@ -36,11 +36,10 @@ const createInputGroup = (label, placeholder, error = null) => {
   })
 
   // Input
-  const input = figma_create_input({
+  figma_create_input({
     placeholder: placeholder,
     parentId: group.nodeId
   })
-  figma_set_layout_sizing({ nodeId: input.nodeId, horizontal: "FILL" })
 
   // Error text (if any)
   if (error) {
@@ -78,9 +77,9 @@ const errorInput = figma_create_frame({
   autoLayout: { mode: "HORIZONTAL", spacing: 12, padding: 12 },
   fill: { type: "SOLID", color: "#18181B" },
   stroke: { color: "#EF4444", weight: 1 },  // red border
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: errorInput.nodeId, horizontal: "FILL" })
 
 // Input text
 figma_create_text({
@@ -107,17 +106,17 @@ const successInput = figma_create_frame({
   autoLayout: { mode: "HORIZONTAL", spacing: 12, padding: 12 },
   fill: { type: "SOLID", color: "#18181B" },
   stroke: { color: "#22C55E", weight: 1 },  // green border
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: successInput.nodeId, horizontal: "FILL" })
 
-figma_create_text({
+const successText = figma_create_text({
   content: "valid@email.com",
   parentId: successInput.nodeId,
   style: { fontSize: 16 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text-node", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: successText.nodeId, horizontal: "FILL" })
 
 figma_create_icon({
   name: "check-circle",
@@ -135,17 +134,17 @@ figma_create_icon({
 const passwordGroup = figma_create_frame({
   name: "PasswordInput",
   parentId: form.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 6 }
+  autoLayout: { mode: "VERTICAL", spacing: 6 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: passwordGroup.nodeId, horizontal: "FILL" })
 
 // Label row (label + forgot link)
 const labelRow = figma_create_frame({
   name: "LabelRow",
   parentId: passwordGroup.nodeId,
-  autoLayout: { mode: "HORIZONTAL", primaryAxisAlign: "SPACE_BETWEEN" }
+  autoLayout: { mode: "HORIZONTAL", primaryAxisAlign: "SPACE_BETWEEN" },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: labelRow.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "Sifre",
@@ -172,17 +171,17 @@ const inputRow = figma_create_frame({
     counterAxisAlign: "CENTER"
   },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: inputRow.nodeId, horizontal: "FILL" })
 
-figma_create_text({
+const passwordText = figma_create_text({
   content: "••••••••",
   parentId: inputRow.nodeId,
   style: { fontSize: 16 },
   fill: { type: "SOLID", color: "#FAFAFA" }
 })
-figma_set_layout_sizing({ nodeId: "text-node", horizontal: "FILL" })
+figma_set_layout_sizing({ nodeId: passwordText.nodeId, horizontal: "FILL" })
 
 figma_create_icon({
   name: "eye-off",
@@ -210,25 +209,25 @@ figma_create_icon({
 const actions = figma_create_frame({
   name: "FormActions",
   parentId: form.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 12 }
+  autoLayout: { mode: "VERTICAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: actions.nodeId, horizontal: "FILL" })
 
 // Primary action
-const primaryBtn = figma_create_button({
+figma_create_button({
   text: "Kaydet",
   variant: "primary",
+  fullWidth: true,
   parentId: actions.nodeId
 })
-figma_set_layout_sizing({ nodeId: primaryBtn.nodeId, horizontal: "FILL" })
 
 // Secondary action
-const secondaryBtn = figma_create_button({
+figma_create_button({
   text: "Iptal",
   variant: "ghost",
+  fullWidth: true,
   parentId: actions.nodeId
 })
-figma_set_layout_sizing({ nodeId: secondaryBtn.nodeId, horizontal: "FILL" })
 ```
 
 ### Inline Actions Pattern
@@ -241,9 +240,9 @@ const inlineActions = figma_create_frame({
     mode: "HORIZONTAL",
     spacing: 12,
     primaryAxisAlign: "MAX"  // right aligned
-  }
+  },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: inlineActions.nodeId, horizontal: "FILL" })
 
 figma_create_button({
   text: "Iptal",
@@ -266,9 +265,9 @@ figma_create_button({
 const checkboxGroup = figma_create_frame({
   name: "CheckboxGroup",
   parentId: form.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 12 }
+  autoLayout: { mode: "VERTICAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: checkboxGroup.nodeId, horizontal: "FILL" })
 
 // Group label
 figma_create_text({
@@ -298,9 +297,9 @@ options.forEach(option => {
 const radioGroup = figma_create_frame({
   name: "RadioGroup",
   parentId: form.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 12 }
+  autoLayout: { mode: "VERTICAL", spacing: 12 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: radioGroup.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "Tema Secimi",
@@ -329,9 +328,9 @@ radioOptions.forEach((option, index) => {
 const selectGroup = figma_create_frame({
   name: "SelectGroup",
   parentId: form.nodeId,
-  autoLayout: { mode: "VERTICAL", spacing: 6 }
+  autoLayout: { mode: "VERTICAL", spacing: 6 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: selectGroup.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "Ulke",
@@ -351,9 +350,9 @@ const select = figma_create_frame({
     counterAxisAlign: "CENTER"
   },
   fill: { type: "SOLID", color: "#18181B" },
-  cornerRadius: 8
+  cornerRadius: 8,
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: select.nodeId, horizontal: "FILL" })
 
 figma_create_text({
   content: "Turkiye",
@@ -408,22 +407,22 @@ figma_create_icon({
 const progressBar = figma_create_frame({
   name: "ProgressBar",
   parentId: content.nodeId,
-  autoLayout: { mode: "HORIZONTAL", spacing: 8 }
+  autoLayout: { mode: "HORIZONTAL", spacing: 8 },
+  layoutSizingHorizontal: "FILL"
 })
-figma_set_layout_sizing({ nodeId: progressBar.nodeId, horizontal: "FILL" })
 
 const steps = 3
 const currentStep = 1
 
 for (let i = 0; i < steps; i++) {
-  const step = figma_create_frame({
+  figma_create_frame({
     name: `Step-${i + 1}`,
     parentId: progressBar.nodeId,
     height: 4,
     fill: { type: "SOLID", color: i < currentStep ? "#3B82F6" : "#27272A" },
-    cornerRadius: 2
+    cornerRadius: 2,
+    layoutSizingHorizontal: "FILL"
   })
-  figma_set_layout_sizing({ nodeId: step.nodeId, horizontal: "FILL" })
 }
 
 // Step indicator text
