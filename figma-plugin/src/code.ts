@@ -19,7 +19,6 @@ import { createIOSComponent, listIOSComponents } from "./components/apple-ios";
 import { createMacOSComponent, listMacOSComponents } from "./components/apple-macos";
 import { createLiquidGlassComponent, listLiquidGlassComponents } from "./components/liquid-glass";
 import { listComponents, ComponentLibrary } from "./components";
-import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "./icons/lucide-svgs";
 
 // ============================================================================
 // Handler Utilities
