@@ -318,6 +318,154 @@ function optimizeHeroSection(
 }
 
 /**
+ * Recursively optimizes layout for all child frames
+ */
+function optimizeChildrenRecursively(
+  node: FrameNode,
+  changes: LayoutChange[],
+  suggestions: LayoutSuggestion[],
+  depth: number = 0
+): void {
+  // Max recursion depth to prevent infinite loops
+  if (depth > 10) return;
+
+  for (const child of node.children) {
+    if (child.type !== "FRAME") continue;
+
+    const childFrame = child as FrameNode;
+
+    // Skip if already has auto-layout
+    if (childFrame.layoutMode === "NONE" && childFrame.children.length > 0) {
+      // Auto-detect and enable layout for child
+      const childStrategy = detectLayoutStrategy(childFrame);
+
+      changes.push({
+        nodeId: childFrame.id,
+        nodeName: childFrame.name,
+        changeType: "layoutMode",
+        before: "NONE",
+        after: "VERTICAL",
+      });
+      childFrame.layoutMode = "VERTICAL";
+      childFrame.primaryAxisSizingMode = "AUTO";
+      childFrame.counterAxisSizingMode = "AUTO";
+
+      // Apply child strategy
+      switch (childStrategy) {
+        case "CARD_GRID":
+          optimizeCardGrid(childFrame, changes, suggestions);
+          break;
+        case "FORM_LAYOUT":
+          optimizeFormLayout(childFrame, changes, suggestions);
+          break;
+        case "NAVIGATION":
+          optimizeNavigation(childFrame, changes, suggestions);
+          break;
+        case "HERO_SECTION":
+          optimizeHeroSection(childFrame, changes, suggestions);
+          break;
+        default:
+          optimizeContentStack(childFrame, changes, suggestions);
+      }
+    }
+
+    // Recurse into children
+    if (childFrame.children.length > 0) {
+      optimizeChildrenRecursively(childFrame, changes, suggestions, depth + 1);
+    }
+  }
+}
+
+/**
+ * Validates and fixes touch target sizes
+ */
+function validateTouchTargets(
+  node: FrameNode,
+  changes: LayoutChange[],
+  suggestions: LayoutSuggestion[],
+  platform: "web" | "ios" | "android"
+): void {
+  const minSize = platform === "android" ? 48 : 44;
+
+  const checkTouchTarget = (n: SceneNode): void => {
+    const interactiveNames = ["button", "btn", "input", "link", "toggle", "switch", "checkbox", "radio", "tap", "icon-button"];
+    const isInteractive = interactiveNames.some(name => n.name.toLowerCase().includes(name));
+
+    if (!isInteractive) return;
+
+    if ("width" in n && "height" in n) {
+      const width = n.width;
+      const height = n.height;
+
+      if (width < minSize || height < minSize) {
+        suggestions.push({
+          nodeId: n.id,
+          message: `Touch target "${n.name}" is ${Math.round(width)}x${Math.round(height)}px. Minimum for ${platform} is ${minSize}x${minSize}px`,
+          priority: "high",
+        });
+      }
+    }
+  };
+
+  const traverse = (n: SceneNode): void => {
+    checkTouchTarget(n);
+    if ("children" in n) {
+      (n as FrameNode).children.forEach(traverse);
+    }
+  };
+
+  traverse(node);
+}
+
+/**
+ * Optimizes visual hierarchy of text elements
+ */
+function optimizeVisualHierarchy(
+  node: FrameNode,
+  changes: LayoutChange[],
+  suggestions: LayoutSuggestion[]
+): void {
+  const textNodes: TextNode[] = [];
+
+  const collectTexts = (n: SceneNode): void => {
+    if (n.type === "TEXT") textNodes.push(n);
+    if ("children" in n) {
+      (n as FrameNode).children.forEach(collectTexts);
+    }
+  };
+
+  collectTexts(node);
+
+  if (textNodes.length < 2) return;
+
+  // Group by size
+  const sizeGroups = new Map<number, TextNode[]>();
+  for (const text of textNodes) {
+    const size = text.fontSize as number;
+    if (!sizeGroups.has(size)) sizeGroups.set(size, []);
+    sizeGroups.get(size)!.push(text);
+  }
+
+  // Check for good hierarchy (at least 2 distinct sizes)
+  if (sizeGroups.size < 2) {
+    suggestions.push({
+      nodeId: node.id,
+      message: "All text is the same size. Consider adding visual hierarchy with different font sizes for headings vs body",
+      priority: "medium",
+    });
+  }
+
+  // Check for too many sizes (visual noise)
+  if (sizeGroups.size > 4) {
+    suggestions.push({
+      nodeId: node.id,
+      message: `${sizeGroups.size} different text sizes detected. Consider using 2-3 sizes for cleaner hierarchy`,
+      priority: "low",
+    });
+  }
+}
+
+/**
  * Enforces 8-point grid on spacing and padding
  */
 function enforceGridSpacing(node: FrameNode, changes: LayoutChange[]): void {
@@ -454,9 +602,23 @@ async function handleSmartLayout(params: Record<string, unknown>): Promise<Smart
       break;
   }
 
-  // Enforce grid if option enabled
+  // Enforce grid if option enabled (default: true)
   if (options?.enforceGrid !== false) {
     enforceGridSpacing(frame, changes);
+  }
+
+  // Auto-group: recursively optimize child frames (default: true)
+  if (options?.autoGroup !== false) {
+    optimizeChildrenRecursively(frame, changes, suggestions);
+  }
+
+  // Validate touch targets for platform (always run)
+  const platform = options?.targetPlatform || "web";
+  validateTouchTargets(frame, changes, suggestions, platform);
+
+  // Optimize visual hierarchy (default: true)
+  if (options?.optimizeHierarchy !== false) {
+    optimizeVisualHierarchy(frame, changes, suggestions);
   }
 
   // Add detected strategy to response

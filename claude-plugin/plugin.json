@@ -20,6 +20,9 @@
   ],
   "skills": [
     {
+      "path": "skills/uiux-consultation.md"
+    },
+    {
       "path": "skills/screen-patterns.md"
     },
     {
