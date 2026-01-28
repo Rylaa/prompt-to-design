@@ -31,6 +31,8 @@ tools:
   - mcp__prompt-to-design__figma_set_fill
   - mcp__prompt-to-design__figma_lint_layout
   - mcp__prompt-to-design__figma_connection_status
+  - Write
+  - Bash
 ---
 
 # Execution Agent
@@ -455,3 +457,477 @@ design_session_add_screen({
 | Input | FILL | HUG | Component handles internally |
 | Card | FILL | HUG | Component handles internally |
 | Text | FILL | HUG | Component handles internally |
+
+---
+
+# LOGGING SYSTEM
+
+## Overview
+
+Execution sırasında ve sonrasında detaylı log dosyaları oluşturmalısın. Bu loglar:
+- Debug için kritik (nerede hata oluştu?)
+- Audit için gerekli (spec karşılandı mı?)
+- İyileştirme için veri (pipeline nasıl optimize edilir?)
+
+## Report Directory
+
+Design Agent'tan `reportDir` parametresi alacaksın. Bu dizine log dosyalarını yazacaksın:
+
+```
+{reportDir}/
+├── 1-plan-validation.md    ← Design Agent yazdı
+├── 2-design-spec.md        ← Design Agent yazdı
+├── 3-execution-log.json    ← SEN YAZACAKSIN (execution sırasında)
+└── 4-final-report.md       ← SEN YAZACAKSIN (execution sonunda)
+```
+
+**CRITICAL:** `reportDir` yoksa, execution'a başlama! Design Agent'a geri dön.
+
+---
+
+## Log 1: 3-execution-log.json (Execution Sırasında)
+
+Her tool call'dan sonra bu JSON dosyasını güncelle. Real-time logging!
+
+### JSON Structure
+
+```json
+{
+  "metadata": {
+    "screenName": "Dashboard",
+    "reportDir": "docs/design-reports/20260128-143052-dashboard",
+    "startTime": "2026-01-28T14:30:52Z",
+    "endTime": null,
+    "status": "in_progress"
+  },
+  "session": {
+    "device": "iphone-15",
+    "deviceWidth": 393,
+    "deviceHeight": 852,
+    "theme": "dark",
+    "library": "shadcn"
+  },
+  "summary": {
+    "totalCalls": 0,
+    "successfulCalls": 0,
+    "failedCalls": 0,
+    "successRate": "0%",
+    "duration": null
+  },
+  "nodeRegistry": {},
+  "executionLog": [],
+  "validation": {
+    "lintPassed": null,
+    "lintViolations": [],
+    "checksCompleted": []
+  },
+  "errors": [],
+  "warnings": [],
+  "performance": {
+    "avgCallDuration": null,
+    "slowestCall": null,
+    "fastestCall": null
+  }
+}
+```
+
+### Node Registry Format
+
+Her oluşturulan node için kayıt tut:
+
+```json
+"nodeRegistry": {
+  "MainFrame": {
+    "nodeId": "1:23",
+    "type": "FRAME",
+    "parent": null,
+    "createdAt": "2026-01-28T14:30:53Z"
+  },
+  "Header": {
+    "nodeId": "1:24",
+    "type": "FRAME",
+    "parent": "MainFrame",
+    "createdAt": "2026-01-28T14:30:54Z"
+  },
+  "HeaderTitle": {
+    "nodeId": "1:25",
+    "type": "TEXT",
+    "parent": "Header",
+    "createdAt": "2026-01-28T14:30:55Z"
+  },
+  "Content": {
+    "nodeId": "1:26",
+    "type": "FRAME",
+    "parent": "MainFrame",
+    "sizing": { "horizontal": "FILL", "vertical": "FILL" },
+    "createdAt": "2026-01-28T14:30:56Z"
+  },
+  "SignInButton": {
+    "nodeId": "1:27",
+    "type": "BUTTON",
+    "parent": "Content",
+    "variant": "primary",
+    "createdAt": "2026-01-28T14:30:57Z"
+  }
+}
+```
+
+### Execution Log Entry Format
+
+Her tool call için:
+
+```json
+{
+  "step": 1,
+  "timestamp": "2026-01-28T14:30:53Z",
+  "tool": "figma_create_frame",
+  "action": "CREATE_MAIN_FRAME",
+  "input": {
+    "name": "Dashboard",
+    "width": 393,
+    "height": 852,
+    "fill": { "type": "SOLID", "color": "#09090B" },
+    "autoLayout": { "mode": "VERTICAL", "spacing": 0, "padding": 0 }
+  },
+  "output": {
+    "success": true,
+    "nodeId": "1:23",
+    "name": "Dashboard"
+  },
+  "duration": "124ms",
+  "registeredAs": "MainFrame"
+}
+```
+
+### Error Entry Format
+
+```json
+{
+  "step": 5,
+  "timestamp": "2026-01-28T14:31:02Z",
+  "tool": "figma_set_fill",
+  "error": "Node not found: 1:99",
+  "input": { "nodeId": "1:99", "fill": { "type": "SOLID", "color": "#FF0000" } },
+  "recovery": "Skipped fill operation, continued with next component"
+}
+```
+
+### Update Pattern
+
+Her tool call sonrası:
+
+```typescript
+// 1. Tool call yap
+const result = await figma_create_frame({ ... });
+
+// 2. Log entry ekle
+executionLog.push({
+  step: executionLog.length + 1,
+  timestamp: new Date().toISOString(),
+  tool: "figma_create_frame",
+  action: "CREATE_HEADER",
+  input: { ... },
+  output: result,
+  duration: "45ms",
+  registeredAs: "Header"
+});
+
+// 3. Node registry güncelle
+nodeRegistry["Header"] = {
+  nodeId: result.nodeId,
+  type: "FRAME",
+  parent: "MainFrame",
+  createdAt: new Date().toISOString()
+};
+
+// 4. Summary güncelle
+summary.totalCalls++;
+summary.successfulCalls++;
+
+// 5. JSON dosyasını güncelle
+Write({ file_path: `${reportDir}/3-execution-log.json`, content: JSON.stringify(log, null, 2) });
+```
+
+---
+
+## Log 2: 4-final-report.md (Execution Sonunda)
+
+Execution tamamlandığında bu raporu oluştur.
+
+### Template
+
+```markdown
+# Final Report: {screenName}
+
+**Report Directory:** {reportDir}
+**Generated:** {timestamp}
+**Status:** {PASS | PARTIAL | FAIL}
+
+## Executive Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Tool Calls | {totalCalls} |
+| Successful | {successfulCalls} |
+| Failed | {failedCalls} |
+| Success Rate | {successRate}% |
+| Total Duration | {duration} |
+| Components Created | {componentCount} |
+
+## Screenshot
+
+![Design Screenshot]({reportDir}/screenshot.png)
+
+*(Screenshot captured via figma_get_screenshot if available)*
+
+## Completion Checklist
+
+### Structure
+- [ ] Main frame created with correct dimensions
+- [ ] Main frame has fill color (#09090B for dark theme)
+- [ ] All regions created (Header, Content, Footer, etc.)
+- [ ] All regions have correct sizing (FILL/HUG)
+- [ ] Auto-layout applied to all frames
+
+### Components
+- [ ] All planned components created
+- [ ] Components placed in correct regions
+- [ ] Text content matches spec
+- [ ] Icons created with correct names
+- [ ] Buttons have correct variants
+
+### Styling
+- [ ] Theme colors applied correctly
+- [ ] Typography matches spec
+- [ ] Spacing values match tokens (4, 8, 12, 16, 24, 32)
+
+### Validation
+- [ ] figma_lint_layout passed
+- [ ] No layout violations
+- [ ] Node registry complete
+
+## Node Registry
+
+| Component | Node ID | Type | Parent |
+|-----------|---------|------|--------|
+| MainFrame | 1:23 | FRAME | - |
+| Header | 1:24 | FRAME | MainFrame |
+| HeaderTitle | 1:25 | TEXT | Header |
+| Content | 1:26 | FRAME | MainFrame |
+| SignInButton | 1:27 | BUTTON | Content |
+
+## Issues Encountered
+
+### Errors
+| Step | Tool | Error | Recovery |
+|------|------|-------|----------|
+| 5 | figma_set_fill | Node not found: 1:99 | Skipped, continued |
+
+### Warnings
+- Warning 1: Font "CustomFont" not available, used "Inter" fallback
+- Warning 2: Icon "custom-icon" not found in Lucide library
+
+## Lint Results
+
+**Status:** {PASS | FAIL}
+
+### Violations (if any)
+| Rule | Node | Issue |
+|------|------|-------|
+| AUTO_LAYOUT_REQUIRED | 1:30 | Frame missing auto-layout |
+| VALID_SIZING_MODE | 1:31 | Content should be FILL, found HUG |
+
+## Performance Metrics
+
+| Metric | Value |
+|--------|-------|
+| Average Call Duration | {avgDuration}ms |
+| Slowest Call | {slowestTool} ({slowestDuration}ms) |
+| Fastest Call | {fastestTool} ({fastestDuration}ms) |
+| Total Execution Time | {totalTime}s |
+
+## Tool Usage Breakdown
+
+| Tool | Calls | Success | Failed | Avg Duration |
+|------|-------|---------|--------|--------------|
+| figma_create_frame | 5 | 5 | 0 | 45ms |
+| figma_create_text | 3 | 3 | 0 | 32ms |
+| figma_create_button | 2 | 2 | 0 | 38ms |
+| figma_set_fill | 1 | 0 | 1 | 12ms |
+
+## Execution Timeline
+
+```
+14:30:52.000 [START] Execution started
+14:30:52.124 [OK] MainFrame created (1:23)
+14:30:52.169 [OK] Header created (1:24)
+14:30:52.201 [OK] HeaderTitle created (1:25)
+14:30:52.245 [OK] Content created (1:26)
+14:30:52.283 [OK] SignInButton created (1:27)
+14:30:52.295 [ERR] figma_set_fill failed: Node not found
+14:30:52.310 [OK] Lint passed
+14:30:52.350 [END] Execution completed
+```
+
+## Spec Comparison
+
+### Planned vs Created
+
+| Component | Planned | Created | Match |
+|-----------|---------|---------|-------|
+| MainFrame | ✓ | ✓ | ✅ |
+| Header | ✓ | ✓ | ✅ |
+| HeaderTitle | ✓ | ✓ | ✅ |
+| Content | ✓ | ✓ | ✅ |
+| SignInButton | ✓ | ✓ | ✅ |
+| Footer | ✓ | ✗ | ❌ |
+
+### Missing Components
+- Footer: Skipped due to error in previous step
+
+## Recommendations
+
+1. **Immediate Fixes:**
+   - Add Footer component manually
+   - Check fill color on SignInButton
+
+2. **Pipeline Improvements:**
+   - Add retry logic for transient errors
+   - Improve node ID tracking
+
+3. **Design Improvements:**
+   - Consider adding loading state
+   - Add error state variations
+
+---
+*Generated by Execution Agent*
+*Pipeline: prompt-to-design v1.0*
+```
+
+---
+
+## Logging Workflow
+
+### 1. Execution Başlangıcı
+
+```typescript
+// reportDir kontrolü
+if (!plan.reportDir) {
+  return { error: "reportDir not provided. Design Agent must create reports first." };
+}
+
+// Initial log oluştur
+const log = {
+  metadata: {
+    screenName: plan.screenName,
+    reportDir: plan.reportDir,
+    startTime: new Date().toISOString(),
+    endTime: null,
+    status: "in_progress"
+  },
+  session: {
+    device: plan.device,
+    deviceWidth: plan.deviceWidth,
+    deviceHeight: plan.deviceHeight,
+    theme: plan.theme,
+    library: plan.library
+  },
+  summary: { totalCalls: 0, successfulCalls: 0, failedCalls: 0 },
+  nodeRegistry: {},
+  executionLog: [],
+  validation: {},
+  errors: [],
+  warnings: [],
+  performance: {}
+};
+
+// İlk dosyayı yaz
+Write({ file_path: `${plan.reportDir}/3-execution-log.json`, content: JSON.stringify(log, null, 2) });
+```
+
+### 2. Her Tool Call Sonrası
+
+```typescript
+// Log güncelle
+log.executionLog.push({ ... });
+log.nodeRegistry[componentName] = { ... };
+log.summary.totalCalls++;
+
+// Dosyayı güncelle
+Write({ file_path: `${plan.reportDir}/3-execution-log.json`, content: JSON.stringify(log, null, 2) });
+```
+
+### 3. Hata Durumunda
+
+```typescript
+// Error kaydet
+log.errors.push({
+  step: log.executionLog.length,
+  timestamp: new Date().toISOString(),
+  tool: toolName,
+  error: errorMessage,
+  input: inputParams,
+  recovery: recoveryAction
+});
+
+// Dosyayı güncelle
+Write({ file_path: `${plan.reportDir}/3-execution-log.json`, content: JSON.stringify(log, null, 2) });
+```
+
+### 4. Execution Sonu
+
+```typescript
+// Log'u finalize et
+log.metadata.endTime = new Date().toISOString();
+log.metadata.status = log.errors.length === 0 ? "success" : "partial";
+
+// Performance hesapla
+const durations = log.executionLog.map(e => parseInt(e.duration));
+log.performance = {
+  avgCallDuration: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) + "ms",
+  slowestCall: { tool: "...", duration: Math.max(...durations) + "ms" },
+  fastestCall: { tool: "...", duration: Math.min(...durations) + "ms" }
+};
+
+// Final JSON yaz
+Write({ file_path: `${plan.reportDir}/3-execution-log.json`, content: JSON.stringify(log, null, 2) });
+
+// Final report oluştur
+const finalReport = generateFinalReport(log);
+Write({ file_path: `${plan.reportDir}/4-final-report.md`, content: finalReport });
+```
+
+---
+
+## Logging Checklist
+
+Execution tamamlandığında kontrol et:
+
+- [ ] `3-execution-log.json` oluşturuldu
+- [ ] Her tool call loglandı
+- [ ] Node registry tam
+- [ ] Hatalar kaydedildi
+- [ ] `4-final-report.md` oluşturuldu
+- [ ] Completion checklist dolduruldu
+- [ ] Performance metrikleri hesaplandı
+- [ ] Spec comparison yapıldı
+
+---
+
+## Updated Workflow Summary
+
+```
+1. [INIT] Check reportDir exists (CRITICAL!)
+2. [INIT] Create initial 3-execution-log.json
+3. [CHECK] figma_connection_status → log result
+4. [CHECK] design_session_get → log result
+5. [CREATE] Main frame → log + register
+6. [CREATE] Regions → log + register each
+7. [CREATE] Components → log + register each
+8. [VALIDATE] figma_lint_layout → log result
+9. [SAVE] design_session_add_screen → log result
+10. [FINALIZE] Update 3-execution-log.json (status: success/partial/fail)
+11. [REPORT] Generate 4-final-report.md
+```
+
+**Her adımda:** Tool call → Log entry → Node registry → File update
