@@ -11,6 +11,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface DialogOptions {
   title?: string;
@@ -28,8 +29,9 @@ export async function createShadcnDialog(
     description = "Make changes to your profile here. Click save when you're done.",
     width = shadcnSpacing.dialogMaxWidth,
     hasCloseButton = true,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -137,8 +139,9 @@ export async function createShadcnSheet(
     description = "Sheet description goes here.",
     width = 400,
     side = "right",
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const isVertical = side === "left" || side === "right";

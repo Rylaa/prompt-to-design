@@ -10,6 +10,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type InputVariant = "default" | "disabled" | "withIcon" | "file";
 
@@ -33,8 +34,9 @@ export async function createShadcnInput(
     variant = "default",
     width = 280,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -153,8 +155,9 @@ export async function createShadcnTextarea(
     width = 280,
     rows = 3,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const rowHeight = 24;

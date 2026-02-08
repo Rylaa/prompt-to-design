@@ -39,6 +39,9 @@ import type { AutoLayoutConfig as CoreAutoLayoutConfig } from "../core/types";
 // Spacing tokens
 import { pxToSpacingKey, pxToRadiusKey } from "../tokens/spacing";
 
+// Theme helpers
+import { resolveTheme, getQuickThemeColors } from "../tokens/theme-helpers";
+
 // ============================================================================
 // Frame Handler
 // ============================================================================
@@ -110,9 +113,10 @@ async function handleCreateFrame(params: Record<string, unknown>): Promise<{ nod
       }
     }
   } else if (!params.parentId) {
-    // Root frames (no parentId) get dark theme background by default
-    // #09090B = rgb(9, 9, 11) - ensures white text is visible
-    config.fill = { type: "SOLID", color: { r: 9 / 255, g: 9 / 255, b: 11 / 255 } };
+    // Root frames get theme-aware background
+    const theme = resolveTheme(params);
+    const tc = getQuickThemeColors(theme);
+    config.fill = { type: "SOLID", color: tc.background };
   }
   // Child frames remain transparent if fill not specified (createAutoLayout default)
 

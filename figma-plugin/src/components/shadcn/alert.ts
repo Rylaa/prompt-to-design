@@ -10,6 +10,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type AlertVariant = "default" | "destructive";
 
@@ -29,8 +30,9 @@ export async function createShadcnAlert(
     description = "You can add components to your app using the cli.",
     variant = "default",
     width = 400,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const isDestructive = variant === "destructive";
@@ -138,8 +140,9 @@ export async function createShadcnToast(
     description = "Friday, February 10, 2023 at 5:57 PM",
     variant = "default",
     width = 360,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const isDestructive = variant === "destructive";

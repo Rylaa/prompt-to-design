@@ -7,6 +7,7 @@ import {
   shadcnSpacing,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface CheckboxOptions {
   checked?: boolean;
@@ -22,8 +23,9 @@ export async function createShadcnCheckbox(
     checked = false,
     label,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const size = shadcnSpacing.checkboxSize;
@@ -109,8 +111,9 @@ export async function createShadcnRadio(
     checked = false,
     label,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const size = shadcnSpacing.radioSize;

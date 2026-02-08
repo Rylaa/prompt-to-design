@@ -11,6 +11,7 @@ import {
   Theme,
 } from "../../tokens";
 import { hexToRgb } from "../../tokens/colors";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
@@ -65,7 +66,8 @@ function getBadgeStyles(
 export async function createShadcnBadge(
   options: BadgeOptions = {}
 ): Promise<FrameNode> {
-  const { text = "Badge", variant = "default", theme = "light" } = options;
+  const { text = "Badge", variant = "default", theme: rawTheme } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const styles = getBadgeStyles(variant, theme);
 

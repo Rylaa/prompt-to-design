@@ -8,6 +8,7 @@ import {
   shadcnSpacing,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface SelectOption {
   label: string;
@@ -40,8 +41,9 @@ export async function createShadcnSelect(
     width = 200,
     disabled = false,
     open = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -184,8 +186,9 @@ export async function createShadcnDropdownMenu(
     triggerText = "Open Menu",
     items = defaultItems,
     width = 200,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

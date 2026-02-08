@@ -6,6 +6,7 @@ import {
   getShadcnColors,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type TooltipSide = "top" | "right" | "bottom" | "left";
 
@@ -23,8 +24,9 @@ export async function createShadcnTooltip(
     content = "Add to library",
     triggerText = "Hover",
     side = "top",
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -132,8 +134,9 @@ export async function createShadcnPopover(
     description = "Set the dimensions for the layer.",
     triggerText = "Open popover",
     width = 280,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

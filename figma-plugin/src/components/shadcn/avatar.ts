@@ -11,6 +11,7 @@ import {
   Theme,
 } from "../../tokens";
 import { hexToRgb, type ThemeColors } from "../../tokens/colors";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type AvatarSize = "sm" | "default" | "lg";
 export type AvatarStatus = "online" | "offline" | "away" | "busy" | "none";
@@ -55,8 +56,9 @@ export async function createShadcnAvatar(
     initials = "AB",
     size = "default",
     status = "none",
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const avatarSize = getAvatarSize(size);
@@ -121,7 +123,8 @@ export async function createShadcnAvatar(
 export async function createAvatarGroup(
   options: { count?: number; size?: AvatarSize; theme?: Theme } = {}
 ): Promise<FrameNode> {
-  const { count = 3, size = "default", theme = "light" } = options;
+  const { count = 3, size = "default", theme: rawTheme } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
   const avatarSize = getAvatarSize(size);
   const overlap = avatarSize * 0.3;
 

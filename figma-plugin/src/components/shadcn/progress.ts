@@ -7,6 +7,7 @@ import {
   shadcnSpacing,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface ProgressOptions {
   value?: number; // 0-100
@@ -20,8 +21,9 @@ export async function createShadcnProgress(
   const {
     value = 50,
     width = 200,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const height = shadcnSpacing.progressHeight;
@@ -55,8 +57,9 @@ export async function createShadcnSlider(
   const {
     value = 50,
     width = 200,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const trackHeight = shadcnSpacing.sliderTrackHeight;
@@ -124,8 +127,9 @@ export async function createShadcnSkeleton(
     width = 100,
     height = 20,
     rounded = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

@@ -7,6 +7,7 @@ import {
   getShadcnColors,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface AccordionItem {
   title: string;
@@ -44,8 +45,9 @@ export async function createShadcnAccordion(
     ],
     width = 400,
     type = "single",
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -163,8 +165,9 @@ export async function createShadcnCollapsible(
     content = "@radix-ui/primitives",
     open = true,
     width = 350,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

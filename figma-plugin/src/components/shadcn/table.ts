@@ -7,6 +7,7 @@ import {
   getShadcnColors,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface TableColumn {
   header: string;
@@ -43,8 +44,9 @@ export async function createShadcnTable(
     width = 500,
     striped = true,
     bordered = true,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -195,9 +197,10 @@ export async function createShadcnDataTable(
   const {
     hasSearch = true,
     hasPagination = true,
-    theme = "light",
+    theme: rawTheme,
     ...tableOptions
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

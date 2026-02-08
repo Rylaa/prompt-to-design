@@ -13,6 +13,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export type ButtonVariant =
   | "default"
@@ -130,8 +131,9 @@ export async function createShadcnButton(
     size = "default",
     icon,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const styles = getButtonStyles(variant, theme);
   const sizeConfig = getSizeConfig(size);

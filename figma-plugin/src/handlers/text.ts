@@ -14,11 +14,15 @@ import {
   getNodeOrThrow,
   attachToParentOrPage,
   setPosition,
+  getNode,
   // Paint helpers
   createFill,
   // Font helpers
   loadFont,
 } from "./utils";
+
+// Theme helpers
+import { resolveTheme, getQuickThemeColors, validateTextContrast } from "../tokens/theme-helpers";
 
 // ============================================================================
 // Constants
@@ -86,6 +90,11 @@ async function handleCreateText(params: Record<string, unknown>): Promise<{ node
   // Apply fill color
   if (params.fill) {
     text.fills = [createFill(params.fill as FillConfig)];
+  } else {
+    // Default to theme-aware foreground color
+    const theme = resolveTheme(params);
+    const tc = getQuickThemeColors(theme);
+    text.fills = [{ type: "SOLID", color: tc.foreground }];
   }
 
   // Apply fixed width with auto-height
@@ -100,6 +109,22 @@ async function handleCreateText(params: Record<string, unknown>): Promise<{ node
   // Attach to parent and set position
   await attachToParentOrPage(text, params.parentId as string | undefined);
   setPosition(text, params.x as number | undefined, params.y as number | undefined);
+
+  // Contrast validation: check text color against parent background
+  if (params.parentId) {
+    const parentNode = await getNode(params.parentId as string);
+    if (parentNode && "fills" in parentNode) {
+      const parentFills = (parentNode as FrameNode).fills as readonly Paint[];
+      if (parentFills.length > 0 && parentFills[0].type === "SOLID") {
+        const parentBg = (parentFills[0] as SolidPaint).color;
+        const textFills = text.fills as readonly Paint[];
+        if (textFills.length > 0 && textFills[0].type === "SOLID") {
+          const textFg = (textFills[0] as SolidPaint).color;
+          validateTextContrast(textFg, parentBg, text.name, text.fontSize as number);
+        }
+      }
+    }
+  }
 
   registerNode(text);
   return { nodeId: text.id };

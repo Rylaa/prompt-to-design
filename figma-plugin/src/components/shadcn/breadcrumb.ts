@@ -10,6 +10,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface BreadcrumbItem {
   label: string;
@@ -32,8 +33,9 @@ export async function createShadcnBreadcrumb(
       { label: "Details", active: true },
     ],
     separator = "/",
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

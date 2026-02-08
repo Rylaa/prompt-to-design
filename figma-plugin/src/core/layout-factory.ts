@@ -12,7 +12,7 @@ import type {
   SemanticColorToken,
 } from "./types";
 import { spacing, radius } from "../tokens/spacing";
-import { getShadcnColors } from "../tokens";
+import { getShadcnColors, themeManager } from "../tokens";
 import type { SpacingKey, RadiusKey } from "../tokens/spacing";
 
 /**
@@ -36,12 +36,14 @@ export function resolveRadius(key: RadiusKey | undefined): number {
  */
 export function resolveFill(
   fill: FillConfig | undefined,
-  theme: "light" | "dark" = "light"
+  theme?: "light" | "dark"
 ): Paint[] {
   if (!fill) return [];
 
+  const resolvedTheme = theme ?? (themeManager.getTheme() === "light" ? "light" : "dark");
+
   if (fill.type === "SEMANTIC") {
-    const colors = getShadcnColors(theme);
+    const colors = getShadcnColors(resolvedTheme);
     const colorToken = colors[fill.token as keyof typeof colors];
     if (colorToken && "rgb" in colorToken) {
       return [

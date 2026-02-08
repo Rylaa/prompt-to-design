@@ -29,6 +29,7 @@ import type { AutoLayoutConfig as CoreAutoLayoutConfig } from "../core/types";
 
 // Theme
 import { themeManager } from "../tokens";
+import { resolveTheme, getQuickThemeColors, validateTextContrast } from "../tokens/theme-helpers";
 
 // Icons
 import { LUCIDE_ICONS, hasIcon, getAvailableIcons } from "../icons/lucide-svgs";
@@ -44,14 +45,17 @@ const BUTTON_SIZES = {
   lg: { paddingX: 24, paddingY: 14, fontSize: 18 },
 } as const;
 
-// Button variant styles
-const BUTTON_VARIANTS = {
-  primary: { fill: "#8B5CF6", textColor: "#FFFFFF" },
-  secondary: { fill: "#27272A", textColor: "#FFFFFF" },
-  outline: { fill: "transparent", textColor: "#8B5CF6", stroke: "#8B5CF6" },
-  ghost: { fill: "transparent", textColor: "#A1A1AA" },
-  destructive: { fill: "#EF4444", textColor: "#FFFFFF" },
-} as const;
+// Button variant styles (theme-aware)
+function getButtonVariants(theme: "light" | "dark") {
+  const isDark = theme === "dark";
+  return {
+    primary: { fill: "#8B5CF6", textColor: "#FFFFFF" },
+    secondary: { fill: isDark ? "#27272A" : "#F4F4F5", textColor: isDark ? "#FFFFFF" : "#18181B" },
+    outline: { fill: "transparent", textColor: "#8B5CF6", stroke: "#8B5CF6" },
+    ghost: { fill: "transparent", textColor: isDark ? "#A1A1AA" : "#71717A" },
+    destructive: { fill: "#EF4444", textColor: "#FFFFFF" },
+  } as const;
+}
 
 // Input dimensions
 const DEFAULT_INPUT_WIDTH = 280;
@@ -82,15 +86,18 @@ const DEFAULT_CORNER_RADIUS = 8;
 // Avatar sizes
 const AVATAR_SIZES = { sm: 32, md: 40, lg: 56, xl: 72 } as const;
 
-// Badge variants
-const BADGE_VARIANTS = {
-  default: { bg: "#27272A", text: "#FFFFFF" },
-  primary: { bg: "#8B5CF6", text: "#FFFFFF" },
-  success: { bg: "#10B981", text: "#FFFFFF" },
-  warning: { bg: "#F59E0B", text: "#18181B" },
-  error: { bg: "#EF4444", text: "#FFFFFF" },
-  info: { bg: "#3B82F6", text: "#FFFFFF" },
-} as const;
+// Badge variants (theme-aware)
+function getBadgeVariants(theme: "light" | "dark") {
+  const isDark = theme === "dark";
+  return {
+    default: { bg: isDark ? "#27272A" : "#18181B", text: isDark ? "#FFFFFF" : "#FAFAFA" },
+    primary: { bg: "#8B5CF6", text: "#FFFFFF" },
+    success: { bg: "#10B981", text: "#FFFFFF" },
+    warning: { bg: "#F59E0B", text: "#18181B" },
+    error: { bg: "#EF4444", text: "#FFFFFF" },
+    info: { bg: "#3B82F6", text: "#FFFFFF" },
+  } as const;
+}
 
 // IconButton sizes
 const ICON_BUTTON_SIZES = { sm: 32, md: 40, lg: 48 } as const;
@@ -178,9 +185,11 @@ const componentLibrary: Map<string, ComponentNode> = new Map();
 async function handleCreateButton(params: Record<string, unknown>): Promise<{ nodeId: string }> {
   const variant = (params.variant as string) || "primary";
   const size = (params.size as string) || "md";
+  const theme = resolveTheme(params);
 
   const sizeConfig = BUTTON_SIZES[size as keyof typeof BUTTON_SIZES] || BUTTON_SIZES.md;
-  const variantConfig = BUTTON_VARIANTS[variant as keyof typeof BUTTON_VARIANTS] || BUTTON_VARIANTS.primary;
+  const buttonVariants = getButtonVariants(theme);
+  const variantConfig = buttonVariants[variant as keyof typeof buttonVariants] || buttonVariants.primary;
 
   const button = figma.createFrame();
   try {
@@ -265,6 +274,8 @@ async function handleCreateButton(params: Record<string, unknown>): Promise<{ no
 async function handleCreateInput(params: Record<string, unknown>): Promise<{ nodeId: string }> {
   const width = (params.width as number) || DEFAULT_INPUT_WIDTH;
   const variant = (params.variant as string) || "outline";
+  const theme = resolveTheme(params);
+  const tc = getQuickThemeColors(theme);
 
   const container = figma.createFrame();
   try {
@@ -283,7 +294,7 @@ async function handleCreateInput(params: Record<string, unknown>): Promise<{ nod
       label.fontName = { family: "Inter", style: "Medium" };
       label.characters = params.label as string;
       label.fontSize = 14;
-      label.fills = [createSolidPaint("#A1A1AA")];
+      label.fills = [{ type: "SOLID", color: tc.mutedForeground }];
       container.appendChild(label);
     }
 
@@ -300,11 +311,11 @@ async function handleCreateInput(params: Record<string, unknown>): Promise<{ nod
     input.cornerRadius = INPUT_CORNER_RADIUS;
 
     if (variant === "outline") {
-      input.fills = [createSolidPaint("#18181B")];
-      input.strokes = [createSolidPaint("#27272A")];
+      input.fills = [{ type: "SOLID", color: tc.background }];
+      input.strokes = [{ type: "SOLID", color: tc.input }];
       input.strokeWeight = 1;
     } else if (variant === "filled") {
-      input.fills = [createSolidPaint("#27272A")];
+      input.fills = [{ type: "SOLID", color: tc.muted }];
     }
 
     const placeholder = figma.createText();
@@ -312,7 +323,7 @@ async function handleCreateInput(params: Record<string, unknown>): Promise<{ nod
     placeholder.fontName = { family: "Inter", style: "Regular" };
     placeholder.characters = (params.placeholder as string) || DEFAULT_INPUT_PLACEHOLDER;
     placeholder.fontSize = 15;
-    placeholder.fills = [createSolidPaint("#52525B")];
+    placeholder.fills = [{ type: "SOLID", color: tc.mutedForeground }];
 
     input.appendChild(placeholder);
     container.appendChild(input);
@@ -339,6 +350,9 @@ async function handleCreateInput(params: Record<string, unknown>): Promise<{ nod
  * @returns Object containing the created card node's ID
  */
 async function handleCreateCard(params: Record<string, unknown>): Promise<{ nodeId: string }> {
+  const theme = resolveTheme(params);
+  const tc = getQuickThemeColors(theme);
+
   const config: CoreAutoLayoutConfig = {
     name: (params.name as string) || "Card",
     direction: "VERTICAL",
@@ -347,7 +361,7 @@ async function handleCreateCard(params: Record<string, unknown>): Promise<{ node
     },
     fill: {
       type: "SOLID",
-      color: { r: 1, g: 1, b: 1 },
+      color: tc.card,
     },
     cornerRadius: DEFAULT_CARD_CORNER_RADIUS,
   };
@@ -383,6 +397,13 @@ async function handleCreateCard(params: Record<string, unknown>): Promise<{ node
   }
 
   const card = createAutoLayout(config);
+
+  // Theme-aware border
+  card.strokes = [{ type: "SOLID", color: tc.border }];
+  card.strokeWeight = 1;
+
+  // Contrast validation
+  validateTextContrast(tc.cardForeground, tc.card, "Card");
 
   // Shadow effect
   if (params.shadow !== false) {
@@ -689,7 +710,9 @@ async function createBadgeComponent(variant: string, params: Record<string, unkn
   component.paddingBottom = 4;
   component.cornerRadius = 9999;
 
-  const style = BADGE_VARIANTS[variant as keyof typeof BADGE_VARIANTS] || BADGE_VARIANTS.default;
+  const theme = resolveTheme(params);
+  const badgeVariants = getBadgeVariants(theme);
+  const style = badgeVariants[variant as keyof typeof badgeVariants] || badgeVariants.default;
   component.fills = [createSolidPaint(style.bg)];
 
   const text = figma.createText();
@@ -1080,9 +1103,16 @@ async function handleCreateIcon(params: Record<string, unknown>): Promise<{ node
   const size = (params.size as number) || DEFAULT_ICON_SIZE;
   icon.resize(size, size);
 
-  // Apply color to stroke paths
-  const color = (params.color as string) || DEFAULT_ICON_COLOR;
-  const rgb = hexToRgb(color);
+  // Apply color to stroke paths (theme-aware default)
+  const color = params.color as string | undefined;
+  let rgb: { r: number; g: number; b: number };
+  if (color) {
+    rgb = hexToRgb(color);
+  } else {
+    const theme = resolveTheme(params);
+    const tc = getQuickThemeColors(theme);
+    rgb = tc.foreground;
+  }
 
   // Recursive function to apply color to all nested children
   const applyColorRecursive = (node: SceneNode): void => {

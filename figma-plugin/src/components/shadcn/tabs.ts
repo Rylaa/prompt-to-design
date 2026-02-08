@@ -7,6 +7,7 @@ import {
   shadcnSpacing,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface TabsOptions {
   tabs?: string[];
@@ -22,8 +23,9 @@ export async function createShadcnTabs(
     tabs = ["Account", "Password", "Settings"],
     activeIndex = 0,
     width,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -123,8 +125,9 @@ export async function createShadcnSeparator(
   const {
     orientation = "horizontal",
     length = 200,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

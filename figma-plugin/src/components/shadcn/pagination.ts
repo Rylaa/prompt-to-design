@@ -10,6 +10,7 @@ import {
   Theme,
 } from "../../tokens";
 import { hexToRgb } from "../../tokens/colors";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface PaginationOptions {
   currentPage?: number;
@@ -23,8 +24,9 @@ export async function createShadcnPagination(
   const {
     currentPage = 1,
     totalPages = 5,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 

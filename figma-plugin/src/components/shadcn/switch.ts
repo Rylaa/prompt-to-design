@@ -7,6 +7,7 @@ import {
   shadcnSpacing,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface SwitchOptions {
   checked?: boolean;
@@ -22,8 +23,9 @@ export async function createShadcnSwitch(
     checked = false,
     label,
     disabled = false,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
   const width = shadcnSpacing.switchWidth;

@@ -12,6 +12,7 @@ import {
   shadowsToFigmaEffects,
   Theme,
 } from "../../tokens";
+import { resolveThemeFromOptions } from "../../tokens/theme-helpers";
 
 export interface CardOptions {
   width?: number;
@@ -34,8 +35,9 @@ export async function createShadcnCard(
     description,
     content,
     hasShadow = true,
-    theme = "light",
+    theme: rawTheme,
   } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const colors = getShadcnColors(theme);
 
@@ -81,7 +83,8 @@ export async function createShadcnCard(
 export async function createCardHeader(
   options: { title?: string; description?: string; theme?: Theme } = {}
 ): Promise<FrameNode> {
-  const { title, description, theme = "light" } = options;
+  const { title, description, theme: rawTheme } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
   const colors = getShadcnColors(theme);
 
   const header = figma.createFrame();
@@ -153,7 +156,8 @@ export async function createCardHeader(
 export async function createCardContent(
   options: { content?: string; theme?: Theme } = {}
 ): Promise<FrameNode> {
-  const { content = "", theme = "light" } = options;
+  const { content = "", theme: rawTheme } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
   const colors = getShadcnColors(theme);
 
   const contentFrame = figma.createFrame();
@@ -200,7 +204,8 @@ export async function createCardContent(
 export async function createCardFooter(
   options: { theme?: Theme } = {}
 ): Promise<FrameNode> {
-  const { theme = "light" } = options;
+  const { theme: rawTheme } = options;
+  const theme = resolveThemeFromOptions(rawTheme);
 
   const footer = figma.createFrame();
   footer.name = "CardFooter";
