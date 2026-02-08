@@ -227,6 +227,8 @@ import {
   handleExportMultiple,
   // Hierarchy Validator
   handleValidateHierarchy,
+  // Screen Renderer
+  handleCreateScreen,
 } from "./handlers";
 
 // ============================================================================
@@ -443,6 +445,9 @@ const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
 
   // === Hierarchy Validation ===
   VALIDATE_HIERARCHY: handleValidateHierarchy,
+
+  // === Screen Renderer ===
+  CREATE_SCREEN: handleCreateScreen,
 };
 
 // ============================================================================
