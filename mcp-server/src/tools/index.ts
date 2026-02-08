@@ -35,6 +35,7 @@ import { registerDebugTools } from "./debug.js";
 import { registerVariantGeneratorTools } from "./variant-generator.js";
 import { registerExportTools } from "./export.js";
 import { registerHierarchyValidatorTools } from "./hierarchy-validator.js";
+import { registerScreenTools } from "./screen.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -96,4 +97,7 @@ export function registerAllTools(server: McpServer): void {
 
   // Hierarchy Validation
   registerHierarchyValidatorTools(server);
+
+  // Screen Renderer
+  registerScreenTools(server);
 }
