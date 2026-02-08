@@ -89,36 +89,62 @@ figma_create_text({
 
 ## TAB BAR
 
-### Standard Tab Bar (5 items max)
+### Standard Tab Bar (3-5 items, CRITICAL dimensions!)
+
+**DIMENSIONS**: Total height = 83px (49px tabs + 34px safe area bottom)
+
+```
+┌────────────────────────────────┐
+│ ─ ─ ─ ─ ─ separator ─ ─ ─ ─  │  1px (#27272A)
+│  🏠     📊     💳     👤    │  49px (icon + label + spacing)
+│        [safe area]            │  34px (paddingBottom)
+└────────────────────────────────┘
+```
+
 ```typescript
-const tabBar = figma_create_frame({
+// Tab bar wrapper with top separator
+const tabBarWrapper = figma_create_frame({
   name: "TabBar",
   parentId: mainFrame.nodeId,
-  height: 80,
-  autoLayout: {
-    mode: "HORIZONTAL",
-    paddingTop: 8,
-    paddingBottom: 24,  // safe area
-    paddingLeft: 16,
-    paddingRight: 16,
-    primaryAxisAlign: "SPACE_BETWEEN"
-  },
+  autoLayout: { mode: "VERTICAL", spacing: 0 },
   fill: { type: "SOLID", color: "#18181B" },
   layoutSizingHorizontal: "FILL"
 })
 
+// Top separator line (1px)
+figma_create_frame({
+  name: "TabBarSeparator",
+  parentId: tabBarWrapper.nodeId,
+  height: 1,
+  fill: { type: "SOLID", color: "#27272A" },
+  layoutSizingHorizontal: "FILL"
+})
+
+// Tab items container
+const tabItems = figma_create_frame({
+  name: "TabItems",
+  parentId: tabBarWrapper.nodeId,
+  autoLayout: {
+    mode: "HORIZONTAL",
+    paddingTop: 8,
+    paddingBottom: 34,  // iPhone safe area!
+    paddingLeft: 16,
+    paddingRight: 16
+  },
+  layoutSizingHorizontal: "FILL"
+})
+
 const tabs = [
-  { icon: "home", label: "Ana Sayfa", active: true },
-  { icon: "search", label: "Ara", active: false },
-  { icon: "plus-circle", label: "Ekle", active: false },
-  { icon: "bell", label: "Bildirimler", active: false },
-  { icon: "user", label: "Profil", active: false }
+  { icon: "home", label: "Home", active: true },
+  { icon: "bar-chart-3", label: "Analytics", active: false },
+  { icon: "credit-card", label: "Cards", active: false },
+  { icon: "user", label: "Profile", active: false }
 ]
 
 tabs.forEach(tab => {
   const tabItem = figma_create_frame({
     name: `Tab-${tab.label}`,
-    parentId: tabBar.nodeId,
+    parentId: tabItems.nodeId,
     autoLayout: {
       mode: "VERTICAL",
       spacing: 4,
@@ -130,7 +156,7 @@ tabs.forEach(tab => {
 
   figma_create_icon({
     name: tab.icon,
-    size: 24,
+    size: 22,
     color: tab.active ? "#FAFAFA" : "#71717A",
     parentId: tabItem.nodeId
   })
@@ -138,7 +164,7 @@ tabs.forEach(tab => {
   figma_create_text({
     content: tab.label,
     parentId: tabItem.nodeId,
-    style: { fontSize: 10, fontWeight: 500 },
+    style: { fontSize: 10, fontWeight: tab.active ? 600 : 400 },
     fill: { type: "SOLID", color: tab.active ? "#FAFAFA" : "#71717A" }
   })
 })
@@ -249,6 +275,41 @@ figma_create_button({
   parentId: actions.nodeId
 })
 ```
+
+---
+
+## TAB BAR ICON REFERENCE
+
+Common tab items and their Lucide icons:
+
+| Tab Label | Icon Name | Category |
+|-----------|-----------|----------|
+| Home | home | General |
+| Search / Explore | search | General |
+| Analytics | bar-chart-3 | Finance |
+| Cards / Wallet | credit-card | Finance |
+| Profile / Account | user | General |
+| Settings | settings | General |
+| Messages / Chat | message-circle | Social |
+| Notifications | bell | General |
+| Cart / Shopping | shopping-cart | E-commerce |
+| Orders | package | E-commerce |
+| Favorites / Saved | heart | General |
+| Add / Create | plus-circle | Action |
+| Calendar | calendar | Productivity |
+| Map / Location | map-pin | Location |
+| Activity / Feed | activity | Health |
+
+### Tab Bar Rules
+1. **ALWAYS icon + label** (never text-only or icon-only)
+2. **Max 5 tabs** (3-4 is ideal for mobile)
+3. **Active tab**: white icon + bold label (#FAFAFA, fontWeight: 600)
+4. **Inactive tab**: muted icon + regular label (#71717A, fontWeight: 400)
+5. **Icon size**: 22px (not 24 - slightly smaller for balance)
+6. **Label size**: 10px
+7. **Tab bar background**: #18181B (dark) or #FFFFFF (light)
+8. **Top separator**: 1px line (#27272A dark, #E4E4E7 light)
+9. **Safe area padding**: paddingBottom: 34px (iPhone)
 
 ---
 

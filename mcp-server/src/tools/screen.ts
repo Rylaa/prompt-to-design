@@ -1,8 +1,7 @@
 // mcp-server/src/tools/screen.ts
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { CreateScreenInputSchema } from "../schemas/index.js";
-import { createToolHandler, DEFAULT_ANNOTATIONS } from "./handler-factory.js";
-import type { CreateScreenInput } from "../schemas/index.js";
+import { CreateScreenInputSchema, type CreateScreenInput } from "../schemas/index.js";
+import { createToolHandler } from "./handler-factory.js";
 
 export function registerScreenTools(server: McpServer): void {
   server.tool(

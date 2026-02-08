@@ -9,11 +9,11 @@ import {
   createIOSList,
   createIOSTextField,
   createIOSSearchBar,
-  createIOSToggle,
   createIOSSegmentedControl,
 } from "../components/apple-ios";
 import { getIOSColors, type Theme } from "../tokens";
 import { handleCreateIcon } from "./components";
+import { hexToRgb } from "./utils";
 
 // ============================================================================
 // Types (mirroring the MCP schema, simplified for plugin)
@@ -54,7 +54,6 @@ type ContentItem =
 export async function handleCreateScreen(params: { screen: ScreenSpec }): Promise<{ nodeId: string; name: string }> {
   const spec = params.screen;
   const theme = (spec.theme || "light") as Theme;
-  const colors = getIOSColors(theme);
   const device = DEVICE_PRESETS[spec.device] || DEVICE_PRESETS["iphone-15"];
   const screenName = spec.name || "Screen";
 
@@ -244,8 +243,6 @@ async function renderContentItem(
   theme: Theme,
   availableWidth: number
 ): Promise<void> {
-  const colors = getIOSColors(theme);
-
   switch (item.type) {
     case "text": {
       await renderText(parent, item, theme);
@@ -689,7 +686,6 @@ async function renderCard(
   theme: Theme,
   availableWidth: number
 ): Promise<void> {
-  const colors = getIOSColors(theme);
   const padding = item.padding ?? 16;
 
   const card = figma.createFrame();
@@ -729,15 +725,6 @@ async function renderCard(
 // ============================================================================
 // Utility Functions
 // ============================================================================
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace("#", "");
-  return {
-    r: parseInt(clean.substring(0, 2), 16) / 255,
-    g: parseInt(clean.substring(2, 4), 16) / 255,
-    b: parseInt(clean.substring(4, 6), 16) / 255,
-  };
-}
 
 function rgbToHex(color: { r: number; g: number; b: number }): string {
   const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
