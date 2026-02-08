@@ -269,6 +269,12 @@ export { handleValidateHierarchy } from "./hierarchy-validator";
 export { handleCreateScreen } from "./screen-renderer";
 
 // ============================================================================
+// Style Initializer Handlers
+// ============================================================================
+
+export { initializeDesignStyles } from "./style-initializer";
+
+// ============================================================================
 // Utils Re-export (for convenience)
 // ============================================================================
 
