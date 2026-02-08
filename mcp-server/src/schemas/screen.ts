@@ -136,6 +136,8 @@ const ContentItemSchema: z.ZodType<any> = z.lazy(() =>
     RowItemSchema,
     SectionItemSchema,
     CardItemSchema,
+    GridItemSchema,
+    ContainerItemSchema,
   ])
 );
 
@@ -161,6 +163,25 @@ const CardItemSchema = z.object({
   padding: z.number().optional().default(16),
   cornerRadius: z.number().optional().default(12),
   shadow: z.boolean().optional().default(true),
+});
+
+const GridItemSchema = z.object({
+  type: z.literal("grid"),
+  children: z.array(ContentItemSchema),
+  columns: z.number().min(1).max(6).default(2),
+  gap: z.number().optional().default(16),
+  rowGap: z.number().optional(),
+});
+
+const ContainerItemSchema = z.object({
+  type: z.literal("container"),
+  name: z.string().optional(),
+  children: z.array(ContentItemSchema),
+  layout: z.enum(["vertical", "horizontal"]).default("vertical"),
+  spacing: z.number().optional().default(16),
+  padding: z.number().optional(),
+  align: z.enum(["start", "center", "end"]).optional(),
+  background: z.string().optional(),
 });
 
 // ============================================================================
@@ -218,6 +239,8 @@ export type RowItem = z.infer<typeof RowItemSchema>;
 export type SectionItem = z.infer<typeof SectionItemSchema>;
 export type CardItem = z.infer<typeof CardItemSchema>;
 export type SpacerItem = z.infer<typeof SpacerItemSchema>;
+export type GridItem = z.infer<typeof GridItemSchema>;
+export type ContainerItem = z.infer<typeof ContainerItemSchema>;
 export type NavigationBarSpec = z.infer<typeof NavigationBarSchema>;
 export type TabBarSpec = z.infer<typeof TabBarSchema>;
 

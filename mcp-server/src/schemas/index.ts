@@ -1437,6 +1437,8 @@ export type {
   SectionItem,
   CardItem,
   SpacerItem,
+  GridItem,
+  ContainerItem,
   NavigationBarSpec,
   TabBarSpec,
 } from "./screen.js";

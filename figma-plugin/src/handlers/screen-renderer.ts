@@ -14,6 +14,7 @@ import {
 import { getIOSColors, type Theme } from "../tokens";
 import { handleCreateIcon } from "./components";
 import { hexToRgb } from "./utils";
+import { initializeDesignStyles, type DesignStyles } from "./style-initializer";
 
 // ============================================================================
 // Types (mirroring the MCP schema, simplified for plugin)
@@ -45,7 +46,9 @@ type ContentItem =
   | { type: "icon"; name: string; size?: number; color?: string }
   | { type: "row"; children: ContentItem[]; spacing?: number; align?: string; distribute?: string }
   | { type: "section"; title?: string; children: ContentItem[]; spacing?: number; padding?: number }
-  | { type: "card"; children: ContentItem[]; padding?: number; cornerRadius?: number; shadow?: boolean };
+  | { type: "card"; children: ContentItem[]; padding?: number; cornerRadius?: number; shadow?: boolean }
+  | { type: "grid"; children: ContentItem[]; columns?: number; gap?: number; rowGap?: number }
+  | { type: "container"; name?: string; children: ContentItem[]; layout?: string; spacing?: number; padding?: number; align?: string; background?: string };
 
 // ============================================================================
 // Main Entry Point
@@ -70,6 +73,9 @@ export async function handleCreateScreen(params: { screen: ScreenSpec }): Promis
   screen.paddingRight = 0;
   screen.itemSpacing = 0;
   screen.clipsContent = true;
+
+  // Initialize Figma local styles
+  const styles = await initializeDesignStyles(theme);
 
   // Set background
   if (spec.backgroundColor) {
@@ -111,7 +117,7 @@ export async function handleCreateScreen(params: { screen: ScreenSpec }): Promis
 
   // Render content items
   for (const item of spec.content) {
-    await renderContentItem(contentArea, item, theme, device.width - (IOS_LAYOUT.contentPadding * 2));
+    await renderContentItem(contentArea, item, theme, device.width - (IOS_LAYOUT.contentPadding * 2), styles);
   }
 
   // 5. Tab bar
@@ -241,11 +247,12 @@ async function renderContentItem(
   parent: FrameNode,
   item: ContentItem,
   theme: Theme,
-  availableWidth: number
+  availableWidth: number,
+  styles?: DesignStyles
 ): Promise<void> {
   switch (item.type) {
     case "text": {
-      await renderText(parent, item, theme);
+      await renderText(parent, item, theme, styles);
       break;
     }
     case "button": {
@@ -306,15 +313,23 @@ async function renderContentItem(
       break;
     }
     case "row": {
-      await renderRow(parent, item, theme, availableWidth);
+      await renderRow(parent, item, theme, availableWidth, styles);
       break;
     }
     case "section": {
-      await renderSection(parent, item, theme, availableWidth);
+      await renderSection(parent, item, theme, availableWidth, styles);
       break;
     }
     case "card": {
-      await renderCard(parent, item, theme, availableWidth);
+      await renderCard(parent, item, theme, availableWidth, styles);
+      break;
+    }
+    case "grid": {
+      await renderGrid(parent, item, theme, availableWidth, styles);
+      break;
+    }
+    case "container": {
+      await renderContainer(parent, item, theme, availableWidth, styles);
       break;
     }
   }
@@ -327,10 +342,12 @@ async function renderContentItem(
 async function renderText(
   parent: FrameNode,
   item: Extract<ContentItem, { type: "text" }>,
-  theme: Theme
+  theme: Theme,
+  styles?: DesignStyles
 ): Promise<void> {
   const colors = getIOSColors(theme);
-  const typo = IOS_TYPOGRAPHY[item.style || "body"] || IOS_TYPOGRAPHY.body;
+  const styleName = item.style || "body";
+  const typo = IOS_TYPOGRAPHY[styleName] || IOS_TYPOGRAPHY.body;
   const weight = item.weight || typo.fontWeight;
 
   const fontStyle = weight === "bold" ? "Bold"
@@ -346,6 +363,12 @@ async function renderText(
   text.fontSize = typo.fontSize;
   text.lineHeight = { value: typo.lineHeight, unit: "PIXELS" };
 
+  // Apply text style if available (allows global style updates)
+  const textStyleId = styles?.textStyles.get(styleName);
+  if (textStyleId && !item.weight) {
+    text.textStyleId = textStyleId;
+  }
+
   // Color
   let textColor = colors.label;
   if (item.color === "secondary") textColor = colors.secondaryLabel;
@@ -355,6 +378,19 @@ async function renderText(
   else if (item.color === "custom" && item.customColor) textColor = hexToRgb(item.customColor);
 
   text.fills = [{ type: "SOLID", color: textColor }];
+
+  // Apply paint style for semantic colors
+  if (styles && item.color !== "custom") {
+    const colorKey = item.color === "accent" ? "systemBlue"
+      : item.color === "destructive" ? "systemRed"
+      : item.color === "secondary" ? "secondaryLabel"
+      : item.color === "tertiary" ? "tertiaryLabel"
+      : "label";
+    const paintStyleId = styles.paintStyles.get(colorKey);
+    if (paintStyleId) {
+      text.fillStyleId = paintStyleId;
+    }
+  }
 
   // Alignment
   if (item.align === "center") text.textAlignHorizontal = "CENTER";
@@ -592,7 +628,8 @@ async function renderRow(
   parent: FrameNode,
   item: Extract<ContentItem, { type: "row" }>,
   theme: Theme,
-  availableWidth: number
+  availableWidth: number,
+  styles?: DesignStyles
 ): Promise<void> {
   const row = figma.createFrame();
   row.name = "Row";
@@ -622,7 +659,7 @@ async function renderRow(
     : availableWidth;
 
   for (const child of item.children) {
-    await renderContentItem(row, child, theme, childWidth);
+    await renderContentItem(row, child, theme, childWidth, styles);
   }
 
   // Equal distribution: set all children to FILL
@@ -640,7 +677,8 @@ async function renderSection(
   parent: FrameNode,
   item: Extract<ContentItem, { type: "section" }>,
   theme: Theme,
-  availableWidth: number
+  availableWidth: number,
+  styles?: DesignStyles
 ): Promise<void> {
   const colors = getIOSColors(theme);
   const section = figma.createFrame();
@@ -676,7 +714,7 @@ async function renderSection(
   }
 
   for (const child of item.children) {
-    await renderContentItem(section, child, theme, availableWidth);
+    await renderContentItem(section, child, theme, availableWidth, styles);
   }
 }
 
@@ -684,7 +722,8 @@ async function renderCard(
   parent: FrameNode,
   item: Extract<ContentItem, { type: "card" }>,
   theme: Theme,
-  availableWidth: number
+  availableWidth: number,
+  styles?: DesignStyles
 ): Promise<void> {
   const padding = item.padding ?? 16;
 
@@ -702,15 +741,20 @@ async function renderCard(
   card.fills = [{ type: "SOLID", color: theme === "dark" ? { r: 0.11, g: 0.11, b: 0.118 } : { r: 1, g: 1, b: 1 } }];
 
   if (item.shadow !== false) {
-    card.effects = [{
-      type: "DROP_SHADOW",
-      color: { r: 0, g: 0, b: 0, a: theme === "dark" ? 0.3 : 0.08 },
-      offset: { x: 0, y: 2 },
-      radius: 8,
-      spread: 0,
-      visible: true,
-      blendMode: "NORMAL",
-    }];
+    const shadowStyleId = styles?.effectStyles.get("cardShadow");
+    if (shadowStyleId) {
+      card.effectStyleId = shadowStyleId;
+    } else {
+      card.effects = [{
+        type: "DROP_SHADOW",
+        color: { r: 0, g: 0, b: 0, a: theme === "dark" ? 0.3 : 0.08 },
+        offset: { x: 0, y: 2 },
+        radius: 8,
+        spread: 0,
+        visible: true,
+        blendMode: "NORMAL",
+      }];
+    }
   }
 
   parent.appendChild(card);
@@ -718,7 +762,91 @@ async function renderCard(
 
   const innerWidth = availableWidth - (padding * 2);
   for (const child of item.children) {
-    await renderContentItem(card, child, theme, innerWidth);
+    await renderContentItem(card, child, theme, innerWidth, styles);
+  }
+}
+
+async function renderGrid(
+  parent: FrameNode,
+  item: Extract<ContentItem, { type: "grid" }>,
+  theme: Theme,
+  availableWidth: number,
+  styles?: DesignStyles
+): Promise<void> {
+  const columns = item.columns ?? 2;
+  const gap = item.gap ?? 16;
+  const rowGap = item.rowGap ?? gap;
+
+  const grid = figma.createFrame();
+  grid.name = "Grid";
+  grid.layoutMode = "HORIZONTAL";
+  grid.layoutWrap = "WRAP";
+  grid.primaryAxisSizingMode = "FIXED";
+  grid.counterAxisSizingMode = "AUTO";
+  grid.itemSpacing = gap;
+  grid.counterAxisSpacing = rowGap;
+  grid.fills = [];
+
+  parent.appendChild(grid);
+  grid.layoutSizingHorizontal = "FILL";
+
+  const totalGap = (columns - 1) * gap;
+  const itemWidth = Math.floor((availableWidth - totalGap) / columns);
+
+  for (const child of item.children) {
+    const gridItem = figma.createFrame();
+    gridItem.name = "GridItem";
+    gridItem.resize(itemWidth, 100);
+    gridItem.layoutMode = "VERTICAL";
+    gridItem.primaryAxisSizingMode = "AUTO";
+    gridItem.counterAxisSizingMode = "FIXED";
+    gridItem.fills = [];
+
+    grid.appendChild(gridItem);
+
+    await renderContentItem(gridItem, child, theme, itemWidth, styles);
+  }
+}
+
+async function renderContainer(
+  parent: FrameNode,
+  item: Extract<ContentItem, { type: "container" }>,
+  theme: Theme,
+  availableWidth: number,
+  styles?: DesignStyles
+): Promise<void> {
+  const container = figma.createFrame();
+  container.name = item.name || "Container";
+  container.layoutMode = item.layout === "horizontal" ? "HORIZONTAL" : "VERTICAL";
+  container.primaryAxisSizingMode = "AUTO";
+  container.counterAxisSizingMode = "AUTO";
+  container.itemSpacing = item.spacing ?? 16;
+  container.fills = [];
+
+  if (item.padding !== undefined) {
+    container.paddingTop = item.padding;
+    container.paddingBottom = item.padding;
+    container.paddingLeft = item.padding;
+    container.paddingRight = item.padding;
+  }
+
+  if (item.background) {
+    container.fills = [{ type: "SOLID", color: hexToRgb(item.background) }];
+  }
+
+  if (item.align === "center") {
+    container.counterAxisAlignItems = "CENTER";
+    container.primaryAxisAlignItems = "CENTER";
+  } else if (item.align === "end") {
+    container.primaryAxisAlignItems = "MAX";
+  }
+
+  parent.appendChild(container);
+  container.layoutSizingHorizontal = "FILL";
+
+  const innerWidth = item.padding ? availableWidth - (item.padding * 2) : availableWidth;
+  for (const child of item.children) {
+    await renderContentItem(container, child, theme, innerWidth, styles);
   }
 }
 
