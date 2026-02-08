@@ -1414,3 +1414,29 @@ export type GetAllPagesInput = z.infer<typeof GetAllPagesInputSchema>;
 export type GetEditorTypeInput = z.infer<typeof GetEditorTypeInputSchema>;
 export type GetModeInput = z.infer<typeof GetModeInputSchema>;
 export type ConnectionStatusInput = z.infer<typeof ConnectionStatusInputSchema>;
+
+// ============================================================================
+// Screen Renderer Schema
+// ============================================================================
+
+export {
+  ScreenSpecSchema,
+  CreateScreenInputSchema,
+} from "./screen.js";
+
+export type {
+  ScreenSpec,
+  CreateScreenInput,
+  ContentItem,
+  TextItem,
+  ButtonItem,
+  TextFieldItem,
+  CellItem,
+  ListItem,
+  RowItem,
+  SectionItem,
+  CardItem,
+  SpacerItem,
+  NavigationBarSpec,
+  TabBarSpec,
+} from "./screen.js";
