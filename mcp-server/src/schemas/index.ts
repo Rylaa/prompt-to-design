@@ -1442,3 +1442,7 @@ export type {
   NavigationBarSpec,
   TabBarSpec,
 } from "./screen.js";
+
+// Componentize Schema
+export { ComponentizeScreenInputSchema } from "./componentize.js";
+export type { ComponentizeScreenInput } from "./componentize.js";

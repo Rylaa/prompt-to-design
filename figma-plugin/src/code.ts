@@ -229,6 +229,8 @@ import {
   handleValidateHierarchy,
   // Screen Renderer
   handleCreateScreen,
+  // Screen Componentizer
+  handleComponentizeScreen,
 } from "./handlers";
 
 // ============================================================================
@@ -448,6 +450,9 @@ const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
 
   // === Screen Renderer ===
   CREATE_SCREEN: handleCreateScreen,
+
+  // === Screen Componentizer ===
+  COMPONENTIZE_SCREEN: handleComponentizeScreen,
 };
 
 // ============================================================================

@@ -275,6 +275,12 @@ export { handleCreateScreen } from "./screen-renderer";
 export { initializeDesignStyles } from "./style-initializer";
 
 // ============================================================================
+// Screen Componentizer Handlers
+// ============================================================================
+
+export { handleComponentizeScreen } from "./screen-componentizer";
+
+// ============================================================================
 // Utils Re-export (for convenience)
 // ============================================================================
 

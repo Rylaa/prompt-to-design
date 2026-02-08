@@ -416,6 +416,10 @@ async function renderButton(
   });
 
   parent.appendChild(btn);
+  btn.setPluginData("_componentize", JSON.stringify({
+    name: `iOS Button/${item.style || "filled"}`,
+    type: "button",
+  }));
 
   if (item.fullWidth) {
     btn.layoutSizingHorizontal = "FILL";
@@ -759,6 +763,10 @@ async function renderCard(
 
   parent.appendChild(card);
   card.layoutSizingHorizontal = "FILL";
+  card.setPluginData("_componentize", JSON.stringify({
+    name: "iOS Card",
+    type: "card",
+  }));
 
   const innerWidth = availableWidth - (padding * 2);
   for (const child of item.children) {
