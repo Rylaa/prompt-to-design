@@ -221,7 +221,8 @@ export const CreateShadcnComponentInputSchema = z.object({
     "button", "input", "textarea", "card", "badge", "avatar", "avatar-group",
     "checkbox", "radio", "switch", "progress", "slider", "skeleton",
     "alert", "toast", "tabs", "separator", "dialog", "sheet",
-    "select", "dropdown-menu", "tooltip", "popover", "table", "data-table", "accordion", "collapsible"
+    "select", "dropdown-menu", "tooltip", "popover", "table", "data-table", "accordion", "collapsible",
+    "breadcrumb", "pagination"
   ]).describe("shadcn component to create"),
   variant: z.string().optional().describe("Component variant (e.g., 'default', 'destructive', 'outline')"),
   size: z.enum(["sm", "default", "lg", "icon"]).optional().describe("Component size"),
@@ -637,6 +638,18 @@ export const ExportMultipleInputSchema = z.object({
 }).strict();
 
 // ============================================================================
+// Hierarchy Validation Schemas
+// ============================================================================
+
+export const ValidateHierarchyInputSchema = z.object({
+  nodeId: z.string().describe("Root node ID to validate"),
+  rules: z.array(z.string()).optional().default(["MAX_NESTING_DEPTH", "NO_EMPTY_CONTAINERS", "NO_SINGLE_CHILD_WRAPPER", "NO_NESTED_INTERACTIVE"]),
+  maxDepth: z.number().min(1).max(20).optional().default(10),
+}).strict();
+
+export type ValidateHierarchyInput = z.infer<typeof ValidateHierarchyInputSchema>;
+
+// ============================================================================
 // Transform Schemas
 // ============================================================================
 
@@ -781,7 +794,7 @@ export const CreatePolygonInputSchema = z.object({
 export const CreateStarInputSchema = z.object({
   name: z.string().optional().default("Star"),
   pointCount: z.number().min(3).max(100).default(5).describe("Number of points"),
-  innerRadius: z.number().min(0).max(1).default(0.5).describe("Inner radius ratio (0-1)"),
+  innerRadius: z.number().min(0).max(1).default(0.4).describe("Inner radius ratio (0-1)"),
   width: z.number().min(1).default(100),
   height: z.number().min(1).default(100),
   x: z.number().optional(),

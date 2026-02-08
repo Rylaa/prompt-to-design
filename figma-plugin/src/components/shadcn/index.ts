@@ -19,6 +19,8 @@ import { createShadcnSelect, createShadcnDropdownMenu, type SelectOptions } from
 import { createShadcnTooltip, createShadcnPopover, type TooltipOptions, type PopoverOptions } from "./tooltip";
 import { createShadcnTable, createShadcnDataTable, type TableOptions } from "./table";
 import { createShadcnAccordion, createShadcnCollapsible, type AccordionOptions, type CollapsibleOptions } from "./accordion";
+import { createShadcnBreadcrumb, type BreadcrumbOptions, type BreadcrumbItem } from "./breadcrumb";
+import { createShadcnPagination, type PaginationOptions } from "./pagination";
 
 // Re-export all
 export {
@@ -37,6 +39,8 @@ export {
   createShadcnTooltip, createShadcnPopover, type TooltipOptions, type PopoverOptions,
   createShadcnTable, createShadcnDataTable, type TableOptions,
   createShadcnAccordion, createShadcnCollapsible, type AccordionOptions, type CollapsibleOptions,
+  createShadcnBreadcrumb, type BreadcrumbOptions, type BreadcrumbItem,
+  createShadcnPagination, type PaginationOptions,
 };
 
 // Component registry for dynamic lookup
@@ -68,6 +72,8 @@ export const shadcnComponents: Record<string, Function> = {
   "data-table": createShadcnDataTable,
   accordion: createShadcnAccordion,
   collapsible: createShadcnCollapsible,
+  breadcrumb: createShadcnBreadcrumb,
+  pagination: createShadcnPagination,
 };
 
 // Helper to create shadcn component by name

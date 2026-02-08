@@ -10,6 +10,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { hexToRgb } from "../../tokens/colors";
 
 export type MacOSButtonStyle = "push" | "gradient" | "help" | "toolbar";
 
@@ -20,16 +21,6 @@ export interface MacOSButtonOptions {
   disabled?: boolean;
   icon?: string;
   theme?: Theme;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return { r: 0, g: 0, b: 0 };
-  return {
-    r: parseInt(result[1], 16) / 255,
-    g: parseInt(result[2], 16) / 255,
-    b: parseInt(result[3], 16) / 255,
-  };
 }
 
 export async function createMacOSButton(

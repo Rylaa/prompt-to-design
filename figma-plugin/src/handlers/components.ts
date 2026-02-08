@@ -139,7 +139,7 @@ async function createTextNode(config: TextNodeConfig): Promise<TextNode> {
     300: "Light",
     400: "Regular",
     500: "Medium",
-    600: "SemiBold",
+    600: "Semi Bold",
     700: "Bold",
     800: "ExtraBold",
     900: "Black",

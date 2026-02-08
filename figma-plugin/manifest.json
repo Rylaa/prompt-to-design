@@ -9,7 +9,7 @@
   "documentAccess": "dynamic-page",
   "editorType": ["figma", "figjam", "dev"],
   "networkAccess": {
-    "allowedDomains": ["*"],
+    "allowedDomains": ["localhost", "127.0.0.1"],
     "reasoning": "Required for WebSocket connection to local bridge server"
   }
 }

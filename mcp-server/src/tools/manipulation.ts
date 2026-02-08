@@ -78,7 +78,7 @@ Returns: Success confirmation.`,
       inputSchema: MoveNodeInputSchema,
       annotations: DEFAULT_ANNOTATIONS,
     },
-    createToolHandler<MoveNodeInput>("MOVE_NODE")
+    createToolHandler<MoveNodeInput>("MOVE_TO_PARENT")
   );
 
   server.registerTool(

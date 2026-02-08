@@ -4,7 +4,8 @@
  */
 
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { DEFAULT_ANNOTATIONS, READONLY_ANNOTATIONS } from "./handler-factory.js";
 import { sessionManager, DEVICE_PRESETS, MOBILE_LAYOUTS } from "../session/index.js";
 import type { CreateSessionInput, UpdateSessionInput } from "../session/index.js";
 
@@ -70,15 +71,21 @@ const AddFlowSchema = z.object({
   targetNodeId: z.string().optional(),
 });
 
+const EmptySchema = z.object({});
+
 export function registerSessionTools(server: McpServer): void {
   // Create Session
-  server.tool(
+  server.registerTool(
     "design_session_create",
-    "Create a new design session with device and theme configuration",
-    CreateSessionSchema.shape,
+    {
+      title: "Create Design Session",
+      description: "Create a new design session with device and theme configuration",
+      inputSchema: CreateSessionSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
     async (params) => {
       try {
-        const session = sessionManager.createSession(params as CreateSessionInput);
+        const session = sessionManager.createSession(params as unknown as CreateSessionInput);
         return {
           content: [{
             type: "text" as const,
@@ -106,10 +113,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // Get Active Session
-  server.tool(
+  server.registerTool(
     "design_session_get",
-    "Get the current active design session",
-    {},
+    {
+      title: "Get Design Session",
+      description: "Get the current active design session",
+      inputSchema: EmptySchema,
+      annotations: READONLY_ANNOTATIONS,
+    },
     async () => {
       try {
         const session = sessionManager.getActiveSession();
@@ -131,13 +142,17 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // Update Session
-  server.tool(
+  server.registerTool(
     "design_session_update",
-    "Update the active design session",
-    UpdateSessionSchema.shape,
+    {
+      title: "Update Design Session",
+      description: "Update the active design session",
+      inputSchema: UpdateSessionSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
     async (params) => {
       try {
-        const session = sessionManager.updateSession(params as UpdateSessionInput);
+        const session = sessionManager.updateSession(params as unknown as UpdateSessionInput);
         if (!session) {
           return {
             content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: "No active session" }) }],
@@ -156,10 +171,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // Add Screen
-  server.tool(
+  server.registerTool(
     "design_session_add_screen",
-    "Add a new screen to the active session",
-    AddScreenSchema.shape,
+    {
+      title: "Add Screen",
+      description: "Add a new screen to the active session",
+      inputSchema: AddScreenSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
     async (params) => {
       try {
         const layout = MOBILE_LAYOUTS[params.layout || "standard"] || MOBILE_LAYOUTS["standard"];
@@ -186,10 +205,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // Register Component
-  server.tool(
+  server.registerTool(
     "design_session_register_component",
-    "Register a component for reuse across screens",
-    RegisterComponentSchema.shape,
+    {
+      title: "Register Component",
+      description: "Register a component for reuse across screens",
+      inputSchema: RegisterComponentSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
     async (params) => {
       try {
         const registeredComponent = sessionManager.registerComponent(params);
@@ -206,10 +229,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // Add Flow
-  server.tool(
+  server.registerTool(
     "design_session_add_flow",
-    "Add a prototype flow between screens",
-    AddFlowSchema.shape,
+    {
+      title: "Add Flow",
+      description: "Add a prototype flow between screens",
+      inputSchema: AddFlowSchema,
+      annotations: DEFAULT_ANNOTATIONS,
+    },
     async (params) => {
       try {
         sessionManager.addFlow(params);
@@ -226,10 +253,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // List Device Presets
-  server.tool(
+  server.registerTool(
     "design_session_list_devices",
-    "List available device presets",
-    {},
+    {
+      title: "List Devices",
+      description: "List available device presets",
+      inputSchema: EmptySchema,
+      annotations: READONLY_ANNOTATIONS,
+    },
     async () => {
       const devices = Object.entries(DEVICE_PRESETS).map(([key, value]) => ({
         id: key,
@@ -242,10 +273,14 @@ export function registerSessionTools(server: McpServer): void {
   );
 
   // List Layout Templates
-  server.tool(
+  server.registerTool(
     "design_session_list_layouts",
-    "List available mobile layout templates",
-    {},
+    {
+      title: "List Layouts",
+      description: "List available mobile layout templates",
+      inputSchema: EmptySchema,
+      annotations: READONLY_ANNOTATIONS,
+    },
     async () => {
       const layouts = Object.entries(MOBILE_LAYOUTS).map(([key, value]) => ({
         id: key,

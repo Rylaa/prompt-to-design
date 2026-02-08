@@ -752,6 +752,7 @@
         <span class="header-subtitle">AI-Powered Design Bridge</span>
       </div>
     </div>
+    <!-- TODO: Read from package.json -->
     <span class="version-badge">v1.0.0</span>
   </div>
 
@@ -861,7 +862,7 @@
       <ul class="instructions-list">
         <li>
           <span class="step-number">1</span>
-          <span>Start WebSocket server: <code>npm start</code> in websocket-server folder</span>
+          <span>MCP server otomatik olarak WebSocket baglantisini yonetir. Ayri bir WebSocket server baslatmaniza gerek yok.</span>
         </li>
         <li>
           <span class="step-number">2</span>
@@ -873,7 +874,7 @@
         </li>
         <li>
           <span class="step-number">4</span>
-          <span>Watch your designs appear in Figma automatically! ✨</span>
+          <span>Watch your designs appear in Figma automatically!</span>
         </li>
       </ul>
     </div>
@@ -1241,11 +1242,21 @@
     }
 
     function showHelp() {
-      log('Help: Visit the documentation for detailed usage instructions', 'info');
+      log('--- Help ---', 'info');
+      log('1. Baglanti: MCP server embedded WebSocket kullanir (port 9001). Connect butonuna tiklayin.', 'info');
+      log('2. Kullanim: Claude Code CLI uzerinden prompt-to-design MCP ile komut gonderin.', 'info');
+      log('3. Sorun Giderme: Baglanti kurulamiyorsa MCP server\'in calistigindan emin olun.', 'info');
+      log('4. Sorun Giderme: "Node not found" hatasi aliyorsaniz, sayfa degismis olabilir. Selection\'i yenileyin.', 'info');
+      log('5. Sorun Giderme: Font hatalari icin "Inter" fallback font olarak kullanilir.', 'info');
     }
 
     function showAbout() {
-      log('Prompt to Design v1.0.0 - AI-powered Figma design automation', 'info');
+      log('--- About ---', 'info');
+      log('Prompt to Design v1.0.0', 'info');
+      log('AI-powered Figma design automation via Claude Code CLI.', 'info');
+      log('Dogal dil komutlariyla Figma tasarimlari olusturun.', 'info');
+      log('MCP (Model Context Protocol) uzerinden Claude ve Figma arasinda kopru kurar.', 'info');
+      log('GitHub: github.com/anthropics/prompt-to-design', 'info');
     }
 
     function toggleConnection() {

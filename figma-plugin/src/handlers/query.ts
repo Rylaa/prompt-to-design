@@ -223,7 +223,9 @@ export async function handleFindNodes(
 
   const allNodes = figma.currentPage.findAll();
 
-  const filteredNodes = allNodes.filter(node => {
+  const limit = params.limit as number | undefined;
+
+  let filteredNodes = allNodes.filter(node => {
     // Filter by type
     if (criteria.types && criteria.types.length > 0) {
       if (!criteria.types.includes(node.type)) {
@@ -246,6 +248,10 @@ export async function handleFindNodes(
 
     return true;
   });
+
+  if (limit !== undefined && limit > 0) {
+    filteredNodes = filteredNodes.slice(0, limit);
+  }
 
   const nodes = filteredNodes.map(n => ({
     id: n.id,

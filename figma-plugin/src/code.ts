@@ -222,6 +222,11 @@ import {
   // Debug
   handleToggleDebugMode,
   handleGetDebugInfo,
+  // Export
+  handleExportNode,
+  handleExportMultiple,
+  // Hierarchy Validator
+  handleValidateHierarchy,
 } from "./handlers";
 
 // ============================================================================
@@ -431,6 +436,13 @@ const commandHandlers: Record<string, CommandHandler | NoParamsHandler> = {
   // === Visual Debug Mode ===
   TOGGLE_DEBUG_MODE: handleToggleDebugMode,
   GET_DEBUG_INFO: handleGetDebugInfo,
+
+  // === Export ===
+  EXPORT_NODE: handleExportNode,
+  EXPORT_MULTIPLE: handleExportMultiple,
+
+  // === Hierarchy Validation ===
+  VALIDATE_HIERARCHY: handleValidateHierarchy,
 };
 
 // ============================================================================

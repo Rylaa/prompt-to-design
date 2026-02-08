@@ -53,6 +53,12 @@ export interface ThemeColors {
   chart3: ColorToken;
   chart4: ColorToken;
   chart5: ColorToken;
+
+  // Status colors
+  statusSuccess: ColorToken;
+  statusWarning: ColorToken;
+  statusError: ColorToken;
+  statusInfo: ColorToken;
 }
 
 export interface AppleColors {
@@ -150,6 +156,11 @@ export const shadcnLight: ThemeColors = {
   chart3: createColorToken("#274754"),
   chart4: createColorToken("#E8C468"),
   chart5: createColorToken("#F4A462"),
+
+  statusSuccess: createColorToken("#22C55E"),
+  statusWarning: createColorToken("#F59E0B"),
+  statusError: createColorToken("#EF4444"),
+  statusInfo: createColorToken("#3B82F6"),
 };
 
 // shadcn Dark Theme Colors
@@ -187,6 +198,11 @@ export const shadcnDark: ThemeColors = {
   chart3: createColorToken("#E88C30"),
   chart4: createColorToken("#AF57DB"),
   chart5: createColorToken("#E23670"),
+
+  statusSuccess: createColorToken("#4ADE80"),
+  statusWarning: createColorToken("#FBBF24"),
+  statusError: createColorToken("#F87171"),
+  statusInfo: createColorToken("#60A5FA"),
 };
 
 // Apple iOS Light Theme Colors

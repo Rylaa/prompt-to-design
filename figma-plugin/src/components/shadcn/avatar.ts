@@ -10,6 +10,7 @@ import {
   getFigmaFontStyle,
   Theme,
 } from "../../tokens";
+import { hexToRgb, type ThemeColors } from "../../tokens/colors";
 
 export type AvatarSize = "sm" | "default" | "lg";
 export type AvatarStatus = "online" | "offline" | "away" | "busy" | "none";
@@ -32,29 +33,19 @@ function getAvatarSize(size: AvatarSize): number {
   }
 }
 
-function getStatusColor(status: AvatarStatus): string {
+function getStatusColor(status: AvatarStatus, colors: ThemeColors): string {
   switch (status) {
     case "online":
-      return "#22C55E"; // green
+      return colors.statusSuccess.hex;
     case "offline":
-      return "#71717A"; // gray
+      return colors.mutedForeground.hex;
     case "away":
-      return "#F59E0B"; // amber
+      return colors.statusWarning.hex;
     case "busy":
-      return "#EF4444"; // red
+      return colors.statusError.hex;
     default:
-      return "#22C55E";
+      return colors.statusSuccess.hex;
   }
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return { r: 0, g: 0, b: 0 };
-  return {
-    r: parseInt(result[1], 16) / 255,
-    g: parseInt(result[2], 16) / 255,
-    b: parseInt(result[3], 16) / 255,
-  };
 }
 
 export async function createShadcnAvatar(
@@ -112,7 +103,7 @@ export async function createShadcnAvatar(
     statusIndicator.name = "StatusIndicator";
     statusIndicator.resize(statusSize, statusSize);
     statusIndicator.fills = [
-      { type: "SOLID", color: hexToRgb(getStatusColor(status)) },
+      { type: "SOLID", color: hexToRgb(getStatusColor(status, colors)) },
     ];
     statusIndicator.strokes = [{ type: "SOLID", color: colors.background.rgb }];
     statusIndicator.strokeWeight = 2;

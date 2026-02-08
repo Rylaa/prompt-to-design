@@ -33,6 +33,8 @@ import { registerSmartLayoutTools } from "./smart-layout.js";
 import { registerComponentRegistryTools } from "./component-registry.js";
 import { registerDebugTools } from "./debug.js";
 import { registerVariantGeneratorTools } from "./variant-generator.js";
+import { registerExportTools } from "./export.js";
+import { registerHierarchyValidatorTools } from "./hierarchy-validator.js";
 
 /**
  * Register all Figma tools with the MCP server
@@ -88,4 +90,10 @@ export function registerAllTools(server: McpServer): void {
 
   // Session Management
   registerSessionTools(server);
+
+  // Export
+  registerExportTools(server);
+
+  // Hierarchy Validation
+  registerHierarchyValidatorTools(server);
 }

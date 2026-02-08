@@ -90,7 +90,7 @@ class EmbeddedWSServer {
       try {
         this.wss = new WebSocketServer({
           port: this.port,
-          host: "0.0.0.0"  // Bind to all IPv4 interfaces for better compatibility
+          host: "127.0.0.1"  // Bind to localhost only for security
         });
 
         this.wss.on("listening", () => {
@@ -309,7 +309,7 @@ class EmbeddedWSServer {
   public async sendCommand(command: FigmaCommand): Promise<FigmaResponse> {
     return new Promise((resolve, reject) => {
       if (!this.figmaClient || this.figmaClient.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error("No Figma plugin connected. Please open the Figma plugin first."));
+        reject(new Error("Figma plugin bagli degil. Lutfen Figma'da plugini acin ve 'Connect' butonuna basin."));
         return;
       }
 
@@ -325,7 +325,11 @@ class EmbeddedWSServer {
       const timeout = setTimeout(() => {
         if (this.pendingCallbacks.has(id)) {
           this.pendingCallbacks.delete(id);
-          reject(new Error("Command timeout - no response from Figma plugin"));
+          reject(new Error(
+            `Komut zamani asimina ugradi (${COMMAND_TIMEOUT / 1000}s) - Figma plugin "${command.action}" komutuna yanit vermedi (id: ${id}). ` +
+            `Olasi nedenler: plugin UI gorunur degil, Figma mesgul veya plugin cokmus olabilir. ` +
+            `Cozum: Plugin'i yeniden acin ve tekrar baglanin.`
+          ));
         }
       }, COMMAND_TIMEOUT);
 
@@ -370,7 +374,7 @@ class EmbeddedWSServer {
           this.pendingCallbacks.delete(id);
           resolve({
             success: false,
-            error: "PING timeout - Figma plugin not responding",
+            error: `PING zamani asimina ugradi (${timeoutMs / 1000}s) - Figma plugin yanit vermiyor. Plugin'i yeniden acip tekrar deneyin.`,
           });
         }
       }, timeoutMs);

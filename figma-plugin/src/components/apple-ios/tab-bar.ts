@@ -148,7 +148,7 @@ export async function createIOSTabBar(
       labelText.fontName = { family: "Inter", style: "Medium" };
     }
     labelText.characters = item.label;
-    labelText.fontSize = 10;
+    labelText.fontSize = labelStyle.size;
     labelText.fills = [
       {
         type: "SOLID",

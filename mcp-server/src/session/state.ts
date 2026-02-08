@@ -4,6 +4,8 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
+import * as path from "path";
 import type {
   DesignSession,
   CreateSessionInput,
@@ -17,6 +19,42 @@ import { DEVICE_PRESETS, DEFAULT_DEVICE, DEFAULT_THEME } from "./presets.js";
 class SessionManager {
   private sessions: Map<string, DesignSession> = new Map();
   private activeSessionId: string | null = null;
+  private storagePath: string;
+
+  constructor() {
+    this.storagePath = path.join(process.cwd(), ".session-data");
+    if (!fs.existsSync(this.storagePath)) {
+      fs.mkdirSync(this.storagePath, { recursive: true });
+    }
+    this.loadSessions();
+  }
+
+  private saveSessions(): void {
+    try {
+      const data = Object.fromEntries(this.sessions);
+      fs.writeFileSync(
+        path.join(this.storagePath, "sessions.json"),
+        JSON.stringify(data, null, 2)
+      );
+    } catch (e) {
+      console.error("Failed to save sessions:", e);
+    }
+  }
+
+  private loadSessions(): void {
+    try {
+      const filePath = path.join(this.storagePath, "sessions.json");
+      if (fs.existsSync(filePath)) {
+        const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        for (const [id, session] of Object.entries(data)) {
+          this.sessions.set(id, session as DesignSession);
+        }
+        console.error(`Restored ${this.sessions.size} sessions from disk`);
+      }
+    } catch (e) {
+      console.error("Failed to load sessions:", e);
+    }
+  }
 
   createSession(input: CreateSessionInput): DesignSession {
     const sessionId = uuidv4();
@@ -46,6 +84,7 @@ class SessionManager {
     };
     this.sessions.set(sessionId, session);
     this.activeSessionId = sessionId;
+    this.saveSessions();
     return session;
   }
 
@@ -76,6 +115,7 @@ class SessionManager {
     }
     if (input.activeScreen) session.activeScreen = input.activeScreen;
     session.updatedAt = new Date().toISOString();
+    this.saveSessions();
     return session;
   }
 
@@ -96,6 +136,7 @@ class SessionManager {
     }
 
     session.updatedAt = new Date().toISOString();
+    this.saveSessions();
     return newScreen;
   }
 
@@ -121,6 +162,7 @@ class SessionManager {
     }
 
     session.updatedAt = new Date().toISOString();
+    this.saveSessions();
     return session.components[component.name];
   }
 
@@ -129,6 +171,7 @@ class SessionManager {
     if (!session) throw new Error("No active session");
     session.flows.push(flow);
     session.updatedAt = new Date().toISOString();
+    this.saveSessions();
   }
 
   deleteSession(sessionId: string): boolean {
@@ -138,6 +181,10 @@ class SessionManager {
       // Auto-switch to first available session
       const remaining = this.sessions.keys().next();
       this.activeSessionId = remaining.done ? null : remaining.value;
+    }
+
+    if (deleted) {
+      this.saveSessions();
     }
 
     return deleted;
@@ -159,6 +206,7 @@ class SessionManager {
   reset(): void {
     this.sessions.clear();
     this.activeSessionId = null;
+    this.saveSessions();
   }
 }
 

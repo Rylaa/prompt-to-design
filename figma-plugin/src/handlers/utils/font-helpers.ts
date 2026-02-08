@@ -37,6 +37,7 @@ export async function loadFont(fontFamily: string, fontWeight: number): Promise<
     await figma.loadFontAsync(fontName);
     return fontName;
   } catch {
+    console.error(`[font-helpers] Font "${fontFamily}" (${getFontStyle(fontWeight)}) not available, falling back to Inter Regular`);
     const fallback: FontName = { family: "Inter", style: "Regular" };
     await figma.loadFontAsync(fallback);
     return fallback;

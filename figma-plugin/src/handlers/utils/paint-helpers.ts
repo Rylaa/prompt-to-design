@@ -43,6 +43,7 @@ export function hexToRgb(hex: string): RGB {
   }
 
   // Return black as fallback for invalid hex
+  console.error(`[paint-helpers] Invalid hex color: "${hex}", falling back to black`);
   return { r: 0, g: 0, b: 0 };
 }
 
